@@ -6,8 +6,6 @@
 #' @param ext_vars Character string indicating the external variables to take into consideration when weighting
 #' @param num.trees Number of trees from which to extract predictions. Default is 500.
 #' @param n.breaks Number of breaks with which to split continuous predictors. Default is 10.
-#' @param wt Character string indicating how the peripheral variables should be weighted.
-#' @param interval Numeric values specifying the central proportion of predictions to report. Default is 90%
 #' @param verbose Logical. Should information be printed?
 #'
 #' @author Jason Grafmiller
