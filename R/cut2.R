@@ -3,7 +3,8 @@
 #' @param x A vector
 #' @param breaks a single number (greater than or equal to 2) giving the number of intervals into which x is to be cut.
 #'
-#' @return
+#' @return a numeric vector
+#'
 #' @export
 #'
 #' @examples

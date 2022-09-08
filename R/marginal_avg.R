@@ -18,7 +18,6 @@
 #' }
 #'
 #' @references Add references here
-#' @return
 #' @export
 #'
 #' @examples
