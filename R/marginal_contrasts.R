@@ -26,7 +26,7 @@ marginal_contrasts <- function(marginal_preds, var, verbose = FALSE){
 
   if(!is.data.table(mar_table)) mar_table <- as.data.table(mar_table)
 
-  levs <- as.character(unique(mar_table[, get(var)]))
+  levs <- sort(as.character(unique(mar_table[, get(var)])))
 
   peripheral_vars <- names(mar_table)[!names(mar_table) %in% c(var, "pred_prob", "Freq", "tree")]
 
@@ -42,16 +42,19 @@ marginal_contrasts <- function(marginal_preds, var, verbose = FALSE){
       as.data.table()
     names(comb_dt) <- apply(combs, 2, function(c) paste("contrast", levs[c[1]], levs[c[2]], sep = '_'))
     wide_dt <- cbind(wide_dt, comb_dt)
+    # average by peripheral predictors
+    contrast_cols <- names(wide_dt)[grepl("contrast",names(wide_dt))]
+
+    avg_contrast_df <- wide_dt[, lapply(.SD, mean), by = peripheral_vars, .SDcols = contrast_cols] |>
+      as.data.frame()
+
   } else {
     wide_dt$contrast <- wide_dt[, get(levs[2])] - wide_dt[, get(levs[1])]
     message("Contrasts represent difference in predicted probability: ", levs[2], " - ", levs[1])
+    avg_contrast_df <- wide_dt[, .(mean = mean(contrast)), by = peripheral_vars] |>
+      as.data.frame()
+    names(avg_contrast_df)[names(avg_contrast_df) == "mean"] <- paste("mean", var, "contrast", sep = "_")
   }
-
-  avg_contrast_df <- wide_dt[, .(mean = mean(contrast)),
-                     by = peripheral_vars] |>
-    as.data.frame()
-
-  names(avg_contrast_df)[names(avg_contrast_df) == "mean"] <- paste("mean", var, "contrast", sep = "_")
 
   return(avg_contrast_df)
 }
