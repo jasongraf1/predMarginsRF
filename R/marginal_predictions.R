@@ -71,8 +71,9 @@ marginal_predictions <- function(m, data, num.trees = 500, n.breaks = 10,
 
   preds <- predict(m, data = new_data, predict.all = TRUE, type = "response")
 
-  preds_df <- preds$predictions[, 2, ] |>
+  preds_df <- preds$predictions[, m$forest$class.values[1], ] |>
     as.data.frame()
+
   names(preds_df) <- paste("tree", 1:dim(preds$predictions)[3], sep = ".")
 
   # Allow for using custom number of trees in the predictions. Setting this
