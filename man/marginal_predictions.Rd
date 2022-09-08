@@ -24,7 +24,12 @@ marginal_predictions(m, data, num.trees = 500, n.breaks = 10, verbose = TRUE)
 \value{
 A \code{list} of class \code{marginalPreds}.
 \describe{
-\item
+\item{\code{predictions}}{A \code{data.table} of the marginal predictions from the model}
+\item{\code{model}}{The name of the model}
+\item{\code{data}}{The dataset the model was trained on}
+\item{\code{variable_names}}{The names of the independent variables in the model}
+\item{\code{n.breaks}}{The number of breakpoints used for binning continuous predictors}
+\item{\code{num.trees}}{The number of trees included in \code{predictions}}
 }
 }
 \description{
