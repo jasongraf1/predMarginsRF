@@ -30,25 +30,6 @@ marginal_avg <- function(marginal_preds, target_vars, ext_vars = NULL,
 
   if(class(marginal_preds) != "marginalPreds") stop(paste(marginal_preds, 'is not of class "marginalPreds"'))
 
-  # function for getting the midrange of continuous bins
-  cut2 <- function(x, breaks) {
-    # if (length(unique(x)) <= breaks + 1){
-    #   # If the number of breaks is longer than the number of distinct values,
-    #   # we leave the actual values
-    #   vals <- x
-    # } else {
-    x <- as.numeric(as.character(x))
-    r <- range(x)
-    b <- seq(r[1], r[2], length=2*breaks+1)
-    brk <- b[0:breaks*2+1]
-    mid <- b[1:breaks*2]
-    brk[1] <- brk[1]-0.01
-    k <- cut(x, breaks=brk, labels=FALSE)
-    vals <- mid[k]
-  # }
-    return(vals)
-  }
-
   wt <- match.arg(wt)
   n.breaks <- marginal_preds$n.breaks
   mar_table <- marginal_preds$predictions
