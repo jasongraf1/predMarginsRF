@@ -1,10 +1,20 @@
 Package: predictiveMargins
-Title: What the Package Does (One Line, Title Case)
+Title: Calculate predictive margins for random forest models
 Version: 0.0.0.9000
-Authors@R: 
-    person("Jason", "Grafmiller", , "j.grafmiller@bham.ac.uk", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
+Authors@R: c()
+    person(
+    "Jason", "Grafmiller", 
+    email = "j.grafmiller@bham.ac.uk", 
+    role = c("aut", "cre"),
+    comment = c(ORCID = "0000-0002-1012-407X")
+    ),
+    person(
+    "Lukas", "Sönning", 
+    email = "lukas.soenning@uni-bamberg.de", 
+    role = c("aut"),
+    comment = c(ORCID = "0000-0002-2705-395X")
+    ))
+Description: Includes functions for calculating predictive margins for random forest models as described in Sönning & Grafmiller (2022).
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
