@@ -37,6 +37,8 @@ marginal_contrasts <- function(marginal_preds, var, verbose = FALSE){
   wide_dt <- dcast(mar_table, f, value.var = "pred_prob")
 
   if(length(levs) > 2){
+    # For factors with more than 2 levels we calculate all 2-way contrasts, so
+    # for n factor levels we will have n!/(2(n - 2)!) contrasts
     combs <- combn(seq_along(levs), 2)
     comb_dt <- apply(combs, 2, function(c) wide_dt[, get(levs[c[1]])] - wide_dt[, get(levs[c[2]])]) |>
       as.data.table()
