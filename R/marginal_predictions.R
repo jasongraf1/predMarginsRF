@@ -18,6 +18,7 @@
 #'  \item{\code{model}}{The name of the model}
 #'  \item{\code{data}}{The dataset the model was trained on}
 #'  \item{\code{variable_names}}{The names of the independent variables in the model}
+#'  \item{\code{predicted.outcome}}{The value representing the positive predicted outcome}
 #'  \item{\code{n.breaks}}{The number of breakpoints used for binning continuous predictors}
 #'  \item{\code{num.trees}}{The number of trees included in \code{predictions}}
 #' }
@@ -52,7 +53,8 @@ marginal_predictions <- function(m, data, num.trees = 500, n.breaks = 10,
   new_data <- do.call(expand.grid, var_list)
   names(new_data) <- full_vars
 
-  if(verbose) message("Generating predictions for ", nrow(new_data), " combinations.")
+  if(verbose) message("Generating predictions for ", nrow(new_data),
+                      " combinations from ", length(full_vars), " predictor variables.")
 
   preds <- predict(m, data = new_data, predict.all = TRUE, type = "response")
 
@@ -102,6 +104,7 @@ marginal_predictions <- function(m, data, num.trees = 500, n.breaks = 10,
     model = deparse(substitute(m)),
     data = data,
     variable_names = full_vars,
+    predicted.outcome = colnames(m$predictions)[m$forest$class.values[1]],
     n.breaks = n.breaks,
     num.trees = num.trees
   )
