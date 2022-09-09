@@ -34,6 +34,7 @@ marginal_avg <- function(marginal_preds, target_vars, ext_vars = NULL,
   n.breaks <- marginal_preds$n.breaks
   mar_table <- marginal_preds$predictions
   data <- marginal_preds$data
+  pred_outcome <- marginal_preds$predicted.outcome
 
   # Convert data and tables to data.table objects for faster processing
   if(!is.data.table(mar_table)) mar_table <- as.data.table(mar_table)
@@ -121,6 +122,8 @@ marginal_avg <- function(marginal_preds, target_vars, ext_vars = NULL,
                                                  upper = quantile(mean_prob, interval[2])),
                                              by = target_vars] |>
     as.data.frame() # convert back to data.frame
+
+  names(mar_avg_df)[names(mar_avg_df) == "mean"] <- paste("mean_prob", pred_outcome, sep = "_")
 
   num_tar_vars <- target_vars[target_vars %in% target_vars[sapply(data[, target_vars], is.numeric)]]
 
