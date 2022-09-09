@@ -22,6 +22,7 @@
 #'
 #' @examples
 #' \dontrun{}
+#' @importFrom data.table ":="
 marginal_avg <- function(marginal_preds, target_vars, ext_vars = NULL,
                          wt = c("iso", "joint", "all"),
                          interval = c(.05, .95),
