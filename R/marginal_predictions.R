@@ -95,31 +95,8 @@ marginal_predictions <- function(m, data, num.trees = 500, n.breaks = 10,
   # } else {
   #   binned_d <- data
   # }
-  #
-  # # Create dataframe of weights
-  # # TO DO: adjust for isolated weights
-  # if(wt == "joint"){
-  #   count_dt <- ftable(binned_d[, peripheral_vars]) |>
-  #     as.data.frame() |>
-  #     as.data.table()
-  # } else if (wt == "iso"){
-  #   stop("I'm not sure what to do here...")
-  # }
-  # prop_f <- function(x) x/nrow(data)
-  # count_dt[, wt := prop_f(Freq)]
-  # names(count_dt)[1:length(peripheral_vars)] <- peripheral_vars
-  #
-  # # merge data_dt with the the weighting data.table
-  # mar_dt <- merge(data_dt, count_dt, by = peripheral_vars, all.x = TRUE)
-  # # get the averages
-  # mar_avg_df <- mar_dt[, .(mean_prob = weighted.mean(pred_prob, wt), SD = sd(pred_prob),
-  #                          lower = quantile(pred_prob, interval[1]),
-  #                          upper = quantile(pred_prob, interval[2])),
-  #                   by = vars] |>
-  #   as.data.frame() # convert back to data.frame
-  # # convert back to numeric factors
-  # # num_target_vars <- vars[sapply(data[, vars], is.numeric)]
-  # # if(length(num_vars) > 0) mar_avg_df[num_vars] <- lapply(mar_avg_df[num_vars], function(x) as.numeric(as.character(x)))
+
+  # Create list of relevant information and data
   marginal_preds <- list(
     predictions = marginal_dt,
     model = deparse(substitute(m)),
