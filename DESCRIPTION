@@ -1,5 +1,5 @@
 Package: predictiveMargins
-Title: Calculate predictive margins for random forest models
+Title: Predictive margins for random forests
 Version: 0.0.0.9000
 Authors@R: c()
     person(
