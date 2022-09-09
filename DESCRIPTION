@@ -1,7 +1,7 @@
 Package: predictiveMargins
 Title: Predictive margins for random forests
 Version: 0.0.0.9000
-Authors@R: c()
+Authors@R: c(
     person(
     "Jason", "Grafmiller", 
     email = "j.grafmiller@bham.ac.uk", 
