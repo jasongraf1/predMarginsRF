@@ -38,6 +38,9 @@ Calculate average marginal predictions
 \details{
 Add details here
 }
+\examples{
+\dontrun{}
+}
 \references{
 Add references here
 }

@@ -16,6 +16,7 @@
 #' @export
 #'
 #' @examples
+#' \dontrun{}
 marginal_contrasts <- function(marginal_preds, var, verbose = FALSE){
   require(data.table) # use data.table because the results can be very large
 

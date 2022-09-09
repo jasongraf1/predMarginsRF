@@ -24,6 +24,9 @@ Calculate contrasts between marginal predictions for predictor values
 \details{
 Add details here
 }
+\examples{
+\dontrun{}
+}
 \references{
 Add references here
 }
