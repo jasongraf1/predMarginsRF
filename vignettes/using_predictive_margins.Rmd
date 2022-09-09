@@ -26,9 +26,7 @@ library(predictiveMargins)
 
 # Data
 
-use the `written_genitives` dataset from the paper.
-
-We'll convert the relevant columns to factors.
+use the `written_genitives` dataset from the paper. We'll convert the relevant columns to factors.
 
 ```{r}
 written_genitives <- written_genitives |>
@@ -160,7 +158,7 @@ animacy_contrasts |>
 
 
 
-```{r}
+```{r fig.width=6}
 library(ggridges)
 
 animacy_contrasts |> 
@@ -182,7 +180,7 @@ glimpse(genre_contrasts)
 
 We can plot these and color by the comparisons with Press (note the marginal averages above showed a distinct difference between Press and the rest).
 
-```{r}
+```{r fig.width=6}
 genre_contrasts |> 
   pivot_longer(6:15, names_to = "contrast") |> 
   mutate(
@@ -193,6 +191,7 @@ genre_contrasts |>
   # stat_summary(geom = "pointrange", fun.data = "median_hilow") +
   theme_classic()
 ```
+
 All the comparisons with Press show long left tails. Because these reflect the difference in predicted probability of GENRE - Press, the left tails tell us that there are many combinations in which the *s*-genitive is predicted to be **less** likely in the stated genre than in Press texts.  
 
 
