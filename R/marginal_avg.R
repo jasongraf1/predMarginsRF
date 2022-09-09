@@ -115,15 +115,6 @@ marginal_avg <- function(marginal_preds, target_vars, ext_vars = NULL,
   }
 
   # get the averages
-  # mar_avg_df <- mar_dt[, .(mean_prob = weighted.mean(pred_prob, wt), SD = sd(pred_prob),
-  #                          lower = quantile(pred_prob, interval[1]),
-  #                          upper = quantile(pred_prob, interval[2])),
-  #                   by = vars] |>
-  #   as.data.frame() # convert back to data.frame
-  # # convert back to numeric factors
-  # num_target_vars <- vars[sapply(data[, vars], is.numeric)]
-  # if(length(num_vars) > 0) mar_avg_df[num_vars] <- lapply(mar_avg_df[num_vars], function(x) as.numeric(as.character(x)))
-
   mar_avg_df <- mar_table[, .(mean_prob = weighted.mean(pred_prob, wt)),
                        by = c(target_vars, "tree")][, .(mean = mean(mean_prob),
                                                  lower = quantile(mean_prob, interval[1]),
@@ -132,7 +123,8 @@ marginal_avg <- function(marginal_preds, target_vars, ext_vars = NULL,
     as.data.frame() # convert back to data.frame
 
   num_tar_vars <- target_vars[target_vars %in% target_vars[sapply(data[, target_vars], is.numeric)]]
-  if(length(num_tar_vars) > 0) mar_avg_df[num_tar_vars] <- lapply(mar_avg_df[num_tar_vars], function(x) as.numeric(as.character(x))) # convert back to data.frame
+
+  if(length(num_tar_vars) > 0) mar_avg_df[num_tar_vars] <- lapply(mar_avg_df[num_tar_vars], function(x) as.numeric(as.character(x))) # convert back to numeric
 
   return(mar_avg_df)
 
