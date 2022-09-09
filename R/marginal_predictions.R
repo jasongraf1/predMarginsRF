@@ -52,7 +52,7 @@ marginal_predictions <- function(m, data, num.trees = 500, n.breaks = 10,
   new_data <- do.call(expand.grid, var_list)
   names(new_data) <- full_vars
 
-  if(verbose) print(paste("Generating predictions for", nrow(new_data), "combinations."))
+  if(verbose) message("Generating predictions for ", nrow(new_data), " combinations.")
 
   preds <- predict(m, data = new_data, predict.all = TRUE, type = "response")
 
