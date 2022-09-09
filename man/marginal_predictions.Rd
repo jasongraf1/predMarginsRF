@@ -28,6 +28,7 @@ A \code{list} of class \code{marginalPreds}.
 \item{\code{model}}{The name of the model}
 \item{\code{data}}{The dataset the model was trained on}
 \item{\code{variable_names}}{The names of the independent variables in the model}
+\item{\code{predicted.outcome}}{The value representing the positive predicted outcome}
 \item{\code{n.breaks}}{The number of breakpoints used for binning continuous predictors}
 \item{\code{num.trees}}{The number of trees included in \code{predictions}}
 }
