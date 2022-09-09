@@ -26,12 +26,7 @@ library(predictiveMargins)
 
 # Data
 
-use the dataset from the paper.
-
-```{r}
-written_genitives <- data(written_genitives)
-```
-
+use the `written_genitives` dataset from the paper.
 
 We'll convert the relevant columns to factors.
 
