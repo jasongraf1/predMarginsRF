@@ -1,0 +1,210 @@
+---
+title: "Using predictive margins"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Using predictive margins}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Libraries
+
+```{r setup}
+library(tidyverse)
+library(ranger)
+library(data.table)
+library(predictiveMargins)
+```
+
+
+# Data
+
+use the dataset from the paper.
+
+```{r}
+written_genitives <- data(written_genitives)
+```
+
+
+We'll convert the relevant columns to factors.
+
+```{r}
+written_genitives <- written_genitives |>
+  mutate(
+    Type = as.factor(Type),
+    Response = as.numeric(Type) - 1,
+    Genre = as.factor(Genre),
+    Possessor_Animacy3 = as.factor(Possessor_Animacy3),
+    Final_Sibilant = as.factor(Final_Sibilant),
+    Possessor_NP_Type = as.factor(Possessor_NP_Type)
+  )
+glimpse(written_genitives)
+```
+# Fit random forest model
+
+Define the formula.
+
+```{r}
+fmla <- Type ~ Genre + Possessor_Animacy3 + Possessor_NP_Type +
+  Final_Sibilant + Possessor_Length + Possessor_Thematicity
+```
+
+Fit the model. Here we use a probability forest rather than a classification forest by setting `probability = TRUE`. In a real case we would tune the model's hyperparameters, e.g. with the `{tidymodels}` or `{tuneRanger}` packages, but this does not affect the functions in `{predictiveMargins}`.
+
+```{r}
+rf1 <- ranger(
+  fmla,
+  data = written_genitives,
+  num.trees = 1000,
+  mtry = 3,
+  probability = TRUE,
+  respect.unordered.factors = "partition"
+)
+```
+
+# Get marginal predictions
+
+To get the marginal predictions of the trees, we use the `marginal_predictions()` function. The two obligatory arguments are the model `rf1` and the dataset used to train the model.
+
+```{r}
+marginal_preds <- marginal_predictions(rf1, written_genitives)
+```
+Additional optional arguments include:
+
+- `num.trees`: the number of trees from which to take predictions. If this number is smaller than the total number of trees in the forest, a random sample is taken. The default is 500 trees. This is to keep the resulting datasets to a reasonable size, as forests may contain many thousands of trees.
+- `n.breaks`: the number of breakpoints for binning continuous predictor variables. Default is 10. *Note that increasing this number can greatly impact speed and memory cost, especially when there are many other predictor variables.*
+- `verbose`: If `TRUE` additional information will be printed about the dataset.
+
+See the output of `marginal_preds`.
+
+```{r}
+names(marginal_preds)
+```
+
+## Average marginal predictions for categorical predictor
+
+First we calculate the weighted average marginal predictions for the association of `Genre` with genitive construction. 
+
+The default is the isolated weighting (`"iso"`), where the weights are based on the expected distributions of the feature combinations calculated from the marginal distributions of each peripheral predictor.
+
+```{r}
+genre_mar_avg_iso <- marginal_avg(marginal_preds, "Genre")
+```
+```{r}
+genre_mar_avg_iso
+```
+
+now try the joint weighting.
+
+```{r}
+genre_mar_avg_joint <- marginal_avg(marginal_preds, "Genre", wt = "joint")
+```
+Now we can plot these calculations.
+
+```{r}
+bind_rows(
+  genre_mar_avg_iso |>
+    mutate(weighting = "isolated"),
+  genre_mar_avg_joint |>
+    mutate(weighting = "joint")
+) |>
+  ggplot(aes(x = Genre, y = mean_prob_s, color = weighting)) +
+  geom_line(aes(group = weighting), position = position_dodge(width = .2)) +
+  geom_pointrange(aes(ymin = lower, ymax = upper),
+                  position = position_dodge(width = .2)) +
+  theme_classic()
+```
+
+## Average marginal predictions for continuous predictor
+
+```{r}
+marginal_avg(marginal_preds, "Possessor_Thematicity", wt = "joint", verbose = F) |>
+  ggplot(aes(Possessor_Thematicity, mean_prob_s)) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .3) +
+  geom_line(aes(group = 1)) +
+  theme_classic()
+```
+## Contrasts
+
+```{r}
+np_type_contrasts <- marginal_preds |>
+  marginal_contrasts("Possessor_NP_Type")
+```
+```{r}
+glimpse(np_type_contrasts)
+```
+
+
+
+```{r}
+ggplot(np_type_contrasts, aes(x = mean_Possessor_NP_Type_contrast)) +
+  geom_vline(xintercept = 0, color = "blue") +
+  geom_histogram(color = "black", fill = "gray", bins = 50) +
+  theme_classic()
+```
+```{r}
+animacy_contrasts <- marginal_preds |>
+  marginal_contrasts("Possessor_Animacy3")
+```
+
+```{r}
+glimpse(animacy_contrasts)
+```
+```{r}
+animacy_contrasts |> 
+  summarise(across(6:8, ~ median(.x)))
+```
+
+
+
+```{r}
+library(ggridges)
+
+animacy_contrasts |> 
+  pivot_longer(6:8, names_to = "contrast") |> 
+  ggplot(aes(value, contrast)) +
+  geom_density_ridges() +
+  # stat_summary(geom = "pointrange", fun.data = "median_hilow") +
+  theme_classic()
+```
+
+```{r}
+genre_contrasts <- marginal_preds |>
+  marginal_contrasts("Genre")
+```
+
+```{r}
+glimpse(genre_contrasts)
+```
+
+We can plot these and color by the comparisons with Press (note the marginal averages above showed a distinct difference between Press and the rest).
+
+```{r}
+genre_contrasts |> 
+  pivot_longer(6:15, names_to = "contrast") |> 
+  mutate(
+    color = if_else(grepl("Press", contrast), "press", "nonpress")
+  ) |> 
+  ggplot(aes(value, contrast, fill = color)) +
+  geom_density_ridges() +
+  # stat_summary(geom = "pointrange", fun.data = "median_hilow") +
+  theme_classic()
+```
+All the comparisons with Press show long left tails. Because these reflect the difference in predicted probability of GENRE - Press, the left tails tell us that there are many combinations in which the *s*-genitive is predicted to be **less** likely in the stated genre than in Press texts.  
+
+
+
+
+
+
+
+
+
+
