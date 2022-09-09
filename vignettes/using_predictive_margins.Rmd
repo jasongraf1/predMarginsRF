@@ -126,6 +126,7 @@ marginal_avg(marginal_preds, "Possessor_Thematicity", wt = "joint", verbose = F)
   geom_line(aes(group = 1)) +
   theme_classic()
 ```
+
 ## Contrasts
 
 ```{r}
