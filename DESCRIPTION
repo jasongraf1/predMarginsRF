@@ -23,3 +23,10 @@ Depends:
     R (>= 2.10)
 LazyData: true
 URL: https://github.com/jasongraf1/predictiveMargins
+Imports:
+  data.table,
+  ranger
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
