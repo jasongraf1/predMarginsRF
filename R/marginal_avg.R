@@ -50,8 +50,18 @@ marginal_avg <- function(marginal_preds, target_vars, ext_vars = NULL,
   # exclude any external variables
   if(!is.null(ext_vars)) peripheral_vars <- peripheral_vars[!(peripheral_vars %in% ext_vars)]
 
+  if(verbose){
+    message("Calculating weighted averages treating ", paste(peripheral_vars, collapse = ", "), " as peripheral variables, and ", paste(ext_vars, collapse = ", "), " as unweighted external variables.\n")
+
+    if(wt == "iso") {
+      message("Weightings of feature combinations are based on their expected distribution derived from their independent marginal distributions in the dataset.")
+    } else if(wt == "joint"){
+      message("Weightings of feature combinations are based on their joint distribution observed in the dataset.")
+    }
+  }
+
   num_vars <- peripheral_vars[sapply(data[, peripheral_vars], is.numeric)]
-    #
+
   if(length(num_vars) > 0) {
     # Convert numeric columns to factors for merging
     mar_table[ , (num_vars) := lapply(.SD, as.factor), .SDcols = num_vars]
@@ -61,7 +71,7 @@ marginal_avg <- function(marginal_preds, target_vars, ext_vars = NULL,
   } else {
     binned_d <- data_dt
   }
-  #
+
   # # Create dataframe of weights
   # # TO DO: adjust for isolated weights
   if(wt == "joint"){
