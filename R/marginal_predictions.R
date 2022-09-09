@@ -34,26 +34,6 @@ marginal_predictions <- function(m, data, num.trees = 500, n.breaks = 10,
                                  verbose = TRUE){
   require(data.table) # use data.table because the results can be very large
 
-  # wt <- match.arg(wt)
-
-  # function for getting the midrange of continuous bins
-  cut2 <- function(x, breaks) {
-    # if (length(unique(x)) <= breaks + 1){
-    #   # If the number of breaks is longer than the number of distinct values,
-    #   # we leave the actual values
-    #   vals <- x
-    # } else {
-      r <- range(x)
-      b <- seq(r[1], r[2], length = 2 * breaks + 1)
-      brk <- b[0:breaks * 2 + 1]
-      mid <- b[1:breaks * 2]
-      brk[1] <- brk[1] - 0.01
-      k <- cut(x, breaks = brk, labels = FALSE)
-      vals <- mid[k]
-    # }
-    return(vals)
-  }
-
   full_vars <- m$forest$independent.variable.names
 
   # create list of values for the full combination grid.
