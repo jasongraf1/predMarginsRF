@@ -10,6 +10,8 @@ To install the package:
 remotes::install_github("jasongraf1/predictiveMargins")
 ```
 
+Information on how to use the package can be found in the vignette: `vignettes/using_predictive_margins.html` 
+
 --------------
 
 In development:
