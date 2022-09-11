@@ -7,7 +7,7 @@
 #' @param num.trees Number of trees from which to extract predictions. Default is 500.
 #' @param n.breaks Number of breaks with which to split continuous predictors. Default is 10.
 #' @param verbose Logical. Should information be printed?
-#' @param breaks A named list with values representing custom points for which to get predictions for continuous predictors.
+#' @param breaks A named list with values representing custom points for which to get predictions for continuous predictors. If a number of length = 1 is used, that will be the number of evenly-spaced points used (similar to \code{n.breaks})
 #'
 #' @author Jason Grafmiller
 #'
@@ -46,7 +46,9 @@ marginal_predictions <- function(m, data, num.trees = 500, n.breaks = 10,
         vals <- unique(cut2(data[, v], n.breaks))
       } else {
         if(v %in% names(breaks)){ # custom breakpoints use for this variable
-          vals <- breaks[[v]]
+          if(length(breaks[[v]]) == 1){
+            vals <- unique(cut2(data[, v], breaks[[v]]))
+          } else vals <- breaks[[v]]
         } else vals <- unique(cut2(data[, v], n.breaks))
       }
     } else { # column is factor/character
