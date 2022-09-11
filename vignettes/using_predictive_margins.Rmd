@@ -1,13 +1,12 @@
 ---
 title: "Using predictive margins"
+date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette 
 vignette: >
   %\VignetteIndexEntry{Using predictive margins}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-
--------------------------
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
@@ -18,9 +17,11 @@ knitr::opts_chunk$set(
 )
 ```
 
+This vignette demonstrates how to use the core functions in the `{predictiveMargins}` package. For details of the method and theoretical motivation see Sönning & Grafmiller (2022), [Seeing the wood for the trees: Predictive margins for random forests](https://doi.org/10.31234/osf.io/jr8yk).
+
 ## Libraries
 
-This vignette uses the following libraries.
+For this vignette we'll the following basic libraries. *Note that currently the package only works with random forest models fit with the `{ranger}` package.* 
 
 ```{r setup}
 library(tidyverse) # for  data wrangling and plotting
@@ -34,7 +35,7 @@ Install the `{predictiveMargins}` package.
 remotes::install_github("jasongraf1/predictiveMargins")
 ```
 
-Load the library
+Load the library as usual.
 
 ```{r}
 library(predictiveMargins)
@@ -43,9 +44,27 @@ library(predictiveMargins)
 
 ## Data
 
-We'll use the `written_genitives` dataset of English genitive constructions (*the children's voices* [*s*-genitive] vs. *the voices of the children* [*of*-genitive]) from the paper. We fit a random forest (RF) model predicting the use of genitive construction in a given instance.
+For this tutorial, we'll use the `written_genitives` dataset of English genitive constructions (*the children's voices* [*s*-genitive] vs. *the voices of the children* [*of*-genitive]) included in the package and discussed Sönning & Grafmiller (2022). See `?written_genitives` for more on the dataset.
 
-First convert the relevant columns to factors.
+```{r}
+glimpse(written_genitives)
+```
+
+We're interested in exploring the featues that correlate with use of different constructions. We know, for instance, that animate (i.e. human) possessors tend to co-occur more often with the *s*-genitive, and inanimate possessors more with the *of*-genitive.
+
+```{r}
+ggplot(written_genitives, aes(Possessor_Animacy3, fill = Type)) +
+  geom_bar(position = "fill") +
+  labs(y = "Proportion of observed genitive constructions",
+       title = "Genitives by possessor animacy",
+       subtitle = "In 1960s and 1990s written American English") +
+  theme_classic()
+```
+So the aim is to build a model that can predict which construction will be used given a set of contextual features.
+
+## Fit RF model with `{ranger}`
+
+First we'll convert the relevant columns to factors.
 
 ```{r}
 written_genitives <- written_genitives |>
@@ -60,28 +79,15 @@ written_genitives <- written_genitives |>
 glimpse(written_genitives)
 ```
 
-We know, for instance, that human (`'animate'`) possessors tend to co-occur with the *s*-genitive, and inanimate possessors with the *of*-genitive.
 
-```{r}
-ggplot(written_genitives, aes(Possessor_Animacy3, fill = Type)) +
-  geom_bar(position = "fill") +
-  labs(y = "Proportion of observed genitive constructions",
-       title = "Genitives by possessor animacy",
-       subtitle = "In 1960s and 1990s written American English") +
-  theme_classic()
-```
-
-
-## Fit RF model
-
-Define the formula using some contextual features known to correlate with the use of genitive constructions.
+Define the formula using some contextual features known to correlate with the use of genitive constructions, e.g. the genre, the animacy, noun type (proper vs. common), length (in words), frequency ('thematicity') of the possessor, and whether the possessor phrase ends in a sibilant sound.
 
 ```{r}
 fmla <- Type ~ Genre + Possessor_Animacy3 + Possessor_NP_Type +
-  Final_Sibilant + Possessor_Length + Possessor_Thematicity
+  Possessor_Length + Possessor_Thematicity + Final_Sibilant
 ```
 
-Fit the model. Here we use a probability forest rather than a classification forest by setting `probability = TRUE`. In a real case we would tune the model's hyperparameters, e.g. with the `{tidymodels}` or `{tuneRanger}` packages, but this does not affect the functions in `{predictiveMargins}`.
+Fit the model. Here we use a probability forest rather than a classification forest by setting `probability = TRUE`. In a real case we would also tune the model's hyperparameters, e.g. with the `{tidymodels}` or `{tuneRanger}` packages. But this will only affect the performance of the model, and does not affect the functions in `{predictiveMargins}`, so we don't bother here.
 
 ```{r}
 rf1 <- ranger(
@@ -92,13 +98,15 @@ rf1 <- ranger(
   probability = TRUE,
   respect.unordered.factors = "partition"
 )
+rf1
 ```
+
 
 ### Evaluate model
 
-Before generating the predictive margins, it's necessary to evaluate the model. Resutls derived from a poorly performing model are not reliable. The `{caret}` package provides soem good diagnotstic tools.
+Before generating the predictive margins, it's necessary to evaluate the model. Results derived from a poorly performing model are not reliable, so this is always a necessary first step. 
 
-First create a dataframe of the predicted probabilities and the observed vs. predicted outcome. 
+The `{caret}` package provides some good diagnostic tools. First we create a dataframe of the predicted probabilities and the observed vs. predicted outcome. 
 
 ```{r}
 rf1_preds <- rf1$predictions |> 
@@ -135,7 +143,13 @@ Our model is a pretty good one (more information on these measures can be found 
 
 ## Get marginal predictions
 
-To get the marginal predictions of the trees, we use the `marginal_predictions()` function. The two obligatory arguments are the model `rf1` and the dataset used to train the model.
+To get the marginal predictions of the trees, we use the `marginal_predictions()` function. The two obligatory arguments are the model `rf1` and the dataset used to train the model, `written_genitives`. The third argument `breaks = list(Possessor_Length = c(1, 2, 3, 4))` tells the function to calculate predictions only for values of `Possessor_Length` at 1, 2, 3, and 4. For any other continuous predictor variables it will use *n* evenly spaced points (10 by default) spanning the range of the variable. If `breaks` is not specified, all continuous predictors will use the same number of points, set by `n.breaks`.
+
+Additional optional arguments include:
+
+- `num.trees`: the number of trees from which to take predictions. If this number is smaller than the total number of trees in the forest, a random sample is taken. The default is 500 trees. This is to keep the resulting datasets to a reasonable size, as forests may contain many thousands of trees.
+- `n.breaks`: the number of breakpoints for binning continuous predictor variables that are not otherwise specified in `breaks`. Default is 10. The values used for prediction are the midpoints of the resulting bins. *Note that increasing this number can greatly impact speed and memory cost, especially when there are many other predictor variables.*
+- `verbose`: If `TRUE` additional information will be printed about the dataset.
 
 ```{r}
 marginal_preds <- marginal_predictions(
@@ -144,14 +158,8 @@ marginal_preds <- marginal_predictions(
   breaks = list(Possessor_Length = c(1, 2, 3, 4)) # only calculate predictions for these values
   )
 ```
-Additional optional arguments include:
 
-- `num.trees`: the number of trees from which to take predictions. If this number is smaller than the total number of trees in the forest, a random sample is taken. The default is 500 trees. This is to keep the resulting datasets to a reasonable size, as forests may contain many thousands of trees.
-- `n.breaks`: the number of breakpoints for binning continuous predictor variables that are not otherwise specified in `breaks`. Default is 10. The values used for prediction are the midpoints of the resulting bins. *Note that increasing this number can greatly impact speed and memory cost, especially when there are many other predictor variables.*
-- `verbose`: If `TRUE` additional information will be printed about the dataset.
-
-
-See the output of `marginal_preds`. The prediction dataframe is contained in `marginal_preds$predictions`.
+`marginal_preds` is a list. The prediction dataframe is contained in `marginal_preds$predictions`.
 
 ```{r}
 head(marginal_preds$predictions)
@@ -162,12 +170,22 @@ See `help("marginal_predictions")` for more information.
 
 ### Average marginal predictions for a categorical predictor
 
-First we'll calculate the weighted average marginal predictions for the association of the target variable `Possessor_Animacy3` with genitive construction. 
+First we'll calculate the weighted average marginal predictions for the association of the target variable `Possessor_Animacy3` with genitive construction. See Sönning & Grafmiller (2022) for full discussion of the weighting schemes used.
 
-The default is the isolated weighting (`"iso"`), where the weights are based on the expected distributions of all combinations of the peripheral variables (i.e. those **not** `Possessor_Animacy3`), calculated from the marginal distributions of each peripheral predictor.
+
+The function `marginal_avg()` takes two arguments, the model and a character vector of the names of the target variables in the model for which to average the predictions. Additional optional arguments include:
+
+- `ext.vars`: Character string of external predictor variable names across which equal weighting will be applied.
+- `wt`: Character string indicating the type of weighting to be applied to the calculation of mean predictions. - `interval`: The lower and upper quantiles for the distribution of predicted probabilities. Default is `c(.05, .95)`
+- `verbose`: If `TRUE` additional information will be printed about the dataset.
+
+The default weighting is the isolated weighting (`"iso"`), where the weights are based on the expected distributions of all combinations of the peripheral variables (i.e. those **not** `Possessor_Animacy3`), calculated from the independent marginal distributions of each peripheral predictor.
 
 ```{r}
-animacy_mar_avg_iso <- marginal_avg(marginal_preds, "Possessor_Animacy3")
+animacy_mar_avg_iso <- marginal_avg(
+  marginal_preds, 
+  target.vars = "Possessor_Animacy3"
+  )
 ```
 ```{r}
 animacy_mar_avg_iso
@@ -178,7 +196,8 @@ Now try the joint weighting.
 ```{r}
 animacy_mar_avg_joint <- marginal_avg(marginal_preds, "Possessor_Animacy3", wt = "joint")
 ```
-Now we can plot these and compare.
+
+We can plot these and compare. The differences are often negligible, but may vary considerably in some cases.
 
 ```{r}
 bind_rows(
@@ -188,34 +207,77 @@ bind_rows(
     mutate(weighting = "joint")
 ) |>
   ggplot(aes(x = Possessor_Animacy3, y = mean_prob_s, color = weighting)) +
+  geom_hline(yintercept = .5, color = "grey", linetype = "dashed") +
   geom_line(aes(group = weighting), position = position_dodge(width = .2)) +
   geom_pointrange(aes(ymin = lower, ymax = upper),
                   position = position_dodge(width = .2)) +
   theme_classic()
 ```
 
+
+
 #### Excluding external variables from the weighting
 
+Sönning & Grafmiller also discuss the possibility of excluding certain peripheral variables from the weighting. This amounts to weighting predictions equally across all values of these 'external' predictors when computing the average predictions.
+
+Here we exclude `Genre` from the weighting.
+
 ```{r}
-marginal_avg(marginal_preds, "Possessor_Animacy3", ext_vars = "Genre", verbose = FALSE)
+marginal_avg(marginal_preds, "Possessor_Animacy3", ext.vars = "Genre", verbose = FALSE)
 ```
+Compare this to the case where `Genre` is included in the weighting. 
 
 ```{r}
 animacy_mar_avg_iso
 ```
 Here we see that the difference is very minor.
 
-### Average marginal predictions for continuous predictor
+#### Interaction effects
+
+Multivariate associations among predictor variables and the outcome (i.e. "interaction effects") can be calculated easily by simply including them in the vector of target variables.
 
 ```{r}
-marginal_avg(marginal_preds, "Possessor_Thematicity", wt = "joint", verbose = F) |>
+marginal_avg(marginal_preds, c("Possessor_Animacy3", "Possessor_NP_Type"), verbose = F) |> 
+  ggplot(aes(x = Possessor_Animacy3, y = mean_prob_s, color = Possessor_NP_Type)) +
+  geom_hline(yintercept = .5, color = "grey", linetype = "dashed") +
+  geom_line(aes(group = Possessor_NP_Type), position = position_dodge(width = .2)) +
+  geom_pointrange(aes(ymin = lower, ymax = upper),
+                  position = position_dodge(width = .2)) +
+  ggtitle("s-genitive probability by\nPossessor Animacy and NP type") +
+  theme_classic()
+```
+
+Three-way (and more) patterns are possible with this method.
+
+
+```{r fig.width=7}
+marginal_avg(marginal_preds, c("Possessor_Animacy3", "Possessor_NP_Type", "Genre"), 
+             verbose = F) |> 
+  ggplot(aes(x = Possessor_Animacy3, y = mean_prob_s, color = Possessor_NP_Type)) +
+  geom_hline(yintercept = .5, color = "grey", linetype = "dashed") +
+  geom_line(aes(group = Possessor_NP_Type), position = position_dodge(width = .2)) +
+  geom_pointrange(aes(ymin = lower, ymax = upper),
+                  position = position_dodge(width = .2)) + 
+  ggtitle("s-genitive probability by\nPossessor Animacy, NP type, and Genre") +
+  facet_wrap(~ Genre) + 
+  theme_classic() +
+  theme(legend.position = "bottom") 
+```
+
+
+### Average marginal predictions for continuous predictor
+
+Calculating marginal averages for continuous predictors is easy as well.
+
+```{r}
+marginal_avg(marginal_preds, "Possessor_Thematicity", wt = "iso", verbose = F) |>
   ggplot(aes(Possessor_Thematicity, mean_prob_s)) +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .3) +
   geom_line(aes(group = 1)) +
   theme_classic()
 ```
 
-For `Possessor_Length` we only calculated predictions for values of 1 through 4. If we want more, we''
+For `Possessor_Length` recall that we only calculated predictions for values of 1 through 4. 
 
 ```{r}
 marginal_avg(marginal_preds, "Possessor_Length", wt = "iso", verbose = F) |>
@@ -225,7 +287,7 @@ marginal_avg(marginal_preds, "Possessor_Length", wt = "iso", verbose = F) |>
   theme_classic()
 ```
 
- If we want more, we'll need to recalculate the marginal predictions, setting the `break` argument to a different set of numbers.
+If we want more values for this predictor, we'll need to recalculate the marginal predictions, setting the `break` argument to a different set of numbers.
  
 ```{r}
 marginal_preds2 <- marginal_predictions(
@@ -235,7 +297,7 @@ marginal_preds2 <- marginal_predictions(
   )
 ```
  
- Now re-generate the plot.
+Now re-generate the plot.
  
 ```{r}
 marginal_avg(marginal_preds2, "Possessor_Length", wt = "iso", verbose = F) |>
@@ -245,6 +307,57 @@ marginal_avg(marginal_preds2, "Possessor_Length", wt = "iso", verbose = F) |>
   scale_x_continuous(breaks = 1:8) + # put the ticks at integers
   theme_classic()
 ```
+
+We can also examine more fine-grained values of `Possessor_Thematicity`, e.g. by setting the `n.breaks` to 30, since we are not necessarily interested in specific values of this predictor. *Note again that increasing this number can greatly impact speed and memory cost, especially when there are many other predictor variables. If there are many continuous predictors, we recommend keeping `n.breaks` small and setting the values for specific predictors inside `breaks`.*
+
+```{r}
+marginal_preds3 <- marginal_predictions(
+  rf1, 
+  written_genitives, 
+  n.breaks = 30,
+  breaks = list(Possessor_Length = 1:8) # only calculate predictions for these values
+  )
+```
+```{r eval=F}
+# not run
+marginal_preds3 <- marginal_predictions(
+  rf1, 
+  written_genitives, 
+  breaks = list(Possessor_Length = 1:8, Possessor_Thematicity = 30) 
+  )
+```
+
+Now plot the new results.
+
+```{r}
+marginal_avg(marginal_preds3, "Possessor_Thematicity", wt = "iso", verbose = F) |>
+  ggplot(aes(Possessor_Thematicity, mean_prob_s)) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .3) +
+  geom_line(aes(group = 1)) +
+  theme_classic()
+```
+
+The overall picture is not much different, but the resolution is finer. 
+
+#### Interactions
+
+Interactions are just as easy with continuous predictors
+
+```{r fig.width=7}
+marginal_avg(
+  marginal_preds2, 
+  target.vars = c("Possessor_Length", "Genre"), 
+  verbose = F
+  ) |>
+  ggplot(aes(Possessor_Length, mean_prob_s)) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .3) +
+  geom_line(aes(group = 1)) + 
+  facet_wrap(~Genre) +
+  ggtitle("S-genitive probability by\nPossessor Length and Genre") +
+  scale_x_continuous(breaks = 1:8) + # put the ticks at integers
+  theme_classic()
+```
+
 
 ### Contrasts
 
@@ -316,6 +429,9 @@ genre_contrasts |>
 All the comparisons with Press show long left tails. Because these reflect the difference in predicted probability of GENRE - Press, the left tails tell us that there are many combinations in which the *s*-genitive is predicted to be **less** likely in the stated genre than in Press texts.  
 
 
+## References
+
+Sönning, Lukas & Jason Grafmiller. 2022. Seeing the wood for the trees: Predictive margins for random forests. Preprint. *PsyArXiv*. [https://doi.org/10.31234/osf.io/jr8yk](https://doi.org/10.31234/osf.io/jr8yk).
 
 
 
