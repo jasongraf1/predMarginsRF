@@ -7,7 +7,7 @@ Note that this package currently only works with forests fit using the `{ranger}
 To install the package:
 
 ```
-remotes::install_github("jasongraf1/perdictiveMargins")
+remotes::install_github("jasongraf1/predictiveMargins")
 ```
 
 --------------
