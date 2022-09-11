@@ -4,7 +4,14 @@
 \alias{marginal_predictions}
 \title{Get marginal predictions from a random forest}
 \usage{
-marginal_predictions(m, data, num.trees = 500, n.breaks = 10, verbose = TRUE)
+marginal_predictions(
+  m,
+  data,
+  num.trees = 500,
+  n.breaks = 10,
+  verbose = TRUE,
+  breaks = NULL
+)
 }
 \arguments{
 \item{m}{Random forest model. Must be of class \code{ranger}.}
@@ -16,6 +23,8 @@ marginal_predictions(m, data, num.trees = 500, n.breaks = 10, verbose = TRUE)
 \item{n.breaks}{Number of breaks with which to split continuous predictors. Default is 10.}
 
 \item{verbose}{Logical. Should information be printed?}
+
+\item{breaks}{A named list with values representing custom points for which to get predictions for continuous predictors.}
 
 \item{vars}{Character string of targeted predictor variable names from which to derive marginal predictions. Default is all predictors in \code{m} (not recommended).}
 
