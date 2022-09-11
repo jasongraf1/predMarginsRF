@@ -24,7 +24,7 @@ marginal_predictions(
 
 \item{verbose}{Logical. Should information be printed?}
 
-\item{breaks}{A named list with values representing custom points for which to get predictions for continuous predictors.}
+\item{breaks}{A named list with values representing custom points for which to get predictions for continuous predictors. If a number of length = 1 is used, that will be the number of evenly-spaced points used (similar to \code{n.breaks})}
 
 \item{vars}{Character string of targeted predictor variable names from which to derive marginal predictions. Default is all predictors in \code{m} (not recommended).}
 
