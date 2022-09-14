@@ -23,18 +23,19 @@ marginal_contrasts <- function(marginal_preds, target.var, verbose = FALSE){
   if(class(marginal_preds) != "marginalPreds") stop(paste(marginal_preds, 'is not of class "marginalPreds"'))
 
   mar_table <- marginal_preds$predictions
+  pred_outcome <- paste0(marginal_preds$predicted.outcome, "_prob")
 
   if(!is.data.table(mar_table)) mar_table <- as.data.table(mar_table)
 
   levs <- sort(as.character(unique(mar_table[, get(target.var)])))
 
-  peripheral_vars <- names(mar_table)[!names(mar_table) %in% c(target.var, "pred_prob", "Freq", "tree")]
+  peripheral_vars <- names(mar_table)[!names(mar_table) %in% c(target.var, pred_outcome, "Freq", "tree")]
 
   if(verbose) message("Treating the following predictors as peripheral:\n", paste(peripheral_vars, collapse = ", "))
 
   f <- as.formula(paste(paste(c(peripheral_vars, "tree"), collapse = " + "), target.var, sep = " ~ "))
 
-  wide_dt <- dcast(mar_table, f, value.var = "pred_prob")
+  wide_dt <- dcast(mar_table, f, value.var = pred_outcome)
 
   if(length(levs) > 2){
     # For factors with more than 2 levels we calculate all 2-way contrasts, so
