@@ -17,4 +17,5 @@ Information on how to use the package can be found in the vignette: `vignettes/u
 In development:
 
 - Adapting package to work with `{party}` (and `{randomForest}`?) package
-- Adapting to work with *n* > 2 outcomes
+- Adapting to work with *n* > 2 outcomes [**DONE**]
+- Adapting to work with continuous outcomes
