@@ -124,7 +124,9 @@ marginal_predictions <- function(m, data, num.trees = 500, n.breaks = 10,
       outcome_list
     )
   } else { # if outcome is binary
-    label <- outcomes[1]
+
+    predicted.outcome <- m$forest$levels[m$forest$class.values[1]]
+    label <- paste0(predicted.outcome, "_prob")
     preds_df <- preds$predictions[, m$forest$class.values[1], ] |>
       as.data.frame()
 
@@ -136,9 +138,8 @@ marginal_predictions <- function(m, data, num.trees = 500, n.breaks = 10,
     marginal_dt <- cbind(new_data, preds_df) |>
       as.data.table() |>
       melt(id.vars = full_vars, measure.vars = names(preds_df),
-           variable.name = "tree", value.name = paste0(label, "_prob"))
+           variable.name = "tree", value.name = label)
 
-    predicted.outcome <- outcomes[1]
   }
 
   # Create list of relevant information and data
