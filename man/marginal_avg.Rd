@@ -27,7 +27,7 @@ marginal_avg(
 \value{
 A \code{data.frame} including all combinations of values in \code{target.vars}.
 \describe{
-\item{\code{mean}}{The mean of model predictions weighted by the marginal distributions across all predictors other than \code{target.vars} and \code{ext.vars}.}
+\item{\code{mean_X_prob}}{The mean of model predictions for level X weighted by the marginal distributions across all predictors other than \code{target.vars} and \code{ext.vars}.}
 \item{\code{lower}}{The lower percentile of model predictions set by \code{interval}.}
 \item{\code{upper}}{The upper percentile of model predictions set by \code{interval}.}
 }
