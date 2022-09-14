@@ -12,7 +12,7 @@
 #'
 #' @return A \code{data.frame} including all combinations of values in \code{target.vars}.
 #' \describe{
-#' \item{\code{mean}}{The mean of model predictions weighted by the marginal distributions across all predictors other than \code{target.vars} and \code{ext.vars}.}
+#' \item{\code{mean_X_prob}}{The mean of model predictions for level X weighted by the marginal distributions across all predictors other than \code{target.vars} and \code{ext.vars}.}
 #' \item{\code{lower}}{The lower percentile of model predictions set by \code{interval}.}
 #' \item{\code{upper}}{The upper percentile of model predictions set by \code{interval}.}
 #' }
@@ -35,7 +35,7 @@ marginal_avg <- function(marginal_preds, target.vars, ext.vars = NULL,
   n.breaks <- marginal_preds$n.breaks
   mar_table <- marginal_preds$predictions
   data <- marginal_preds$data
-  pred_outcome <- paste(marginal_preds$predicted.outcome, "_prob")
+  pred_outcome <- paste0(marginal_preds$predicted.outcome, "_prob")
 
   # Convert data and tables to data.table objects for faster processing
   if(!is.data.table(mar_table)) mar_table <- as.data.table(mar_table)
@@ -127,14 +127,14 @@ marginal_avg <- function(marginal_preds, target.vars, ext.vars = NULL,
   }
 
   # get the averages
-  mar_avg_df <- mar_table[, .(mean_prob = weighted.mean(pred_prob, wt)),
+  mar_avg_df <- mar_table[, .(mean_prob = weighted.mean(get(pred_outcome), wt)),
                        by = c(target.vars, "tree")][, .(mean = mean(mean_prob),
                                                  lower = quantile(mean_prob, interval[1]),
                                                  upper = quantile(mean_prob, interval[2])),
                                              by = target.vars] |>
     as.data.frame() # convert back to data.frame
 
-  names(mar_avg_df)[names(mar_avg_df) == "mean"] <- paste("mean_prob", pred_outcome, sep = "_")
+  names(mar_avg_df)[names(mar_avg_df) == "mean"] <- paste("mean", pred_outcome, sep = "_")
 
   num_tar_vars <- target.vars[target.vars %in% target.vars[sapply(data[, target.vars], is.numeric)]]
 
