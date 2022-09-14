@@ -90,8 +90,13 @@ marginal_predictions <- function(m, data, num.trees = 500, n.breaks = 10,
 
   # Allow for n > 2 level outcomes.
   if(length(outcomes) > 2){
+
+    # Create a vector of column names that will be in the resulting data.table
+    predicted.outcome <- paste0(outcomes, "_prob")
+
     # Create list of data.tables each with predicted probability for one outcome
     # level.
+
     outcome_list <- lapply(
       seq_along(outcomes),
       function(i) {
@@ -107,6 +112,7 @@ marginal_predictions <- function(m, data, num.trees = 500, n.breaks = 10,
           as.data.table() |>
           melt(id.vars = full_vars, measure.vars = names(preds_df),
                variable.name = "tree", value.name = paste0(label, "_prob"))
+
         return(outcome_dt)
       })
 
@@ -130,7 +136,9 @@ marginal_predictions <- function(m, data, num.trees = 500, n.breaks = 10,
     marginal_dt <- cbind(new_data, preds_df) |>
       as.data.table() |>
       melt(id.vars = full_vars, measure.vars = names(preds_df),
-           variable.name = "tree", value.name = value.name = paste0(label, "_prob"))
+           variable.name = "tree", value.name = paste0(label, "_prob"))
+
+    predicted.outcome <- colnames(m$predictions)[m$forest$class.values[1]]
   }
 
   # Create list of relevant information and data
