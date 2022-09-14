@@ -206,7 +206,7 @@ bind_rows(
   animacy_mar_avg_joint |>
     mutate(weighting = "joint")
 ) |>
-  ggplot(aes(x = Possessor_Animacy3, y = mean_prob_s, color = weighting)) +
+  ggplot(aes(x = Possessor_Animacy3, y = mean_s_prob, color = weighting)) +
   geom_hline(yintercept = .5, color = "grey", linetype = "dashed") +
   geom_line(aes(group = weighting), position = position_dodge(width = .2)) +
   geom_pointrange(aes(ymin = lower, ymax = upper),
@@ -238,7 +238,7 @@ Multivariate associations among predictor variables and the outcome (i.e. "inter
 
 ```{r}
 marginal_avg(marginal_preds, c("Possessor_Animacy3", "Possessor_NP_Type"), verbose = F) |> 
-  ggplot(aes(x = Possessor_Animacy3, y = mean_prob_s, color = Possessor_NP_Type)) +
+  ggplot(aes(x = Possessor_Animacy3, y = mean_s_prob, color = Possessor_NP_Type)) +
   geom_hline(yintercept = .5, color = "grey", linetype = "dashed") +
   geom_line(aes(group = Possessor_NP_Type), position = position_dodge(width = .2)) +
   geom_pointrange(aes(ymin = lower, ymax = upper),
@@ -253,7 +253,7 @@ Three-way (and more) patterns are possible with this method.
 ```{r fig.width=7}
 marginal_avg(marginal_preds, c("Possessor_Animacy3", "Possessor_NP_Type", "Genre"), 
              verbose = F) |> 
-  ggplot(aes(x = Possessor_Animacy3, y = mean_prob_s, color = Possessor_NP_Type)) +
+  ggplot(aes(x = Possessor_Animacy3, y = mean_s_prob, color = Possessor_NP_Type)) +
   geom_hline(yintercept = .5, color = "grey", linetype = "dashed") +
   geom_line(aes(group = Possessor_NP_Type), position = position_dodge(width = .2)) +
   geom_pointrange(aes(ymin = lower, ymax = upper),
@@ -271,7 +271,7 @@ Calculating marginal averages for continuous predictors is easy as well.
 
 ```{r}
 marginal_avg(marginal_preds, "Possessor_Thematicity", wt = "iso", verbose = F) |>
-  ggplot(aes(Possessor_Thematicity, mean_prob_s)) +
+  ggplot(aes(Possessor_Thematicity, mean_s_prob)) +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .3) +
   geom_line(aes(group = 1)) +
   theme_classic()
@@ -281,7 +281,7 @@ For `Possessor_Length` recall that we only calculated predictions for values of 
 
 ```{r}
 marginal_avg(marginal_preds, "Possessor_Length", wt = "iso", verbose = F) |>
-  ggplot(aes(Possessor_Length, mean_prob_s)) +
+  ggplot(aes(Possessor_Length, mean_s_prob)) +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .3) +
   geom_line(aes(group = 1)) +
   theme_classic()
@@ -301,7 +301,7 @@ Now re-generate the plot.
  
 ```{r}
 marginal_avg(marginal_preds2, "Possessor_Length", wt = "iso", verbose = F) |>
-  ggplot(aes(Possessor_Length, mean_prob_s)) +
+  ggplot(aes(Possessor_Length, mean_s_prob)) +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .3) +
   geom_line(aes(group = 1)) + 
   scale_x_continuous(breaks = 1:8) + # put the ticks at integers
@@ -331,7 +331,7 @@ Now plot the new results.
 
 ```{r}
 marginal_avg(marginal_preds3, "Possessor_Thematicity", wt = "iso", verbose = F) |>
-  ggplot(aes(Possessor_Thematicity, mean_prob_s)) +
+  ggplot(aes(Possessor_Thematicity, mean_s_prob)) +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .3) +
   geom_line(aes(group = 1)) +
   theme_classic()
@@ -349,7 +349,7 @@ marginal_avg(
   target.vars = c("Possessor_Length", "Genre"), 
   verbose = F
   ) |>
-  ggplot(aes(Possessor_Length, mean_prob_s)) +
+  ggplot(aes(Possessor_Length, mean_s_prob)) +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .3) +
   geom_line(aes(group = 1)) + 
   facet_wrap(~Genre) +
