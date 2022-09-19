@@ -32,7 +32,7 @@
 #' \dontrun{
 #'
 #' }
-marginal_predictions <- function(m, data, num.trees = 500, n.breaks = 10,
+marginal_predictions <- function(m, data, num.trees = 500L, n.breaks = 10L,
                                  verbose = TRUE, breaks = NULL){
   require(data.table) # use data.table because the results can be very large
 
@@ -147,7 +147,7 @@ marginal_predictions <- function(m, data, num.trees = 500, n.breaks = 10,
              variable.name = "tree", value.name = label)
 
     }} else if (class(m) == "RandomForest"){
-      marginal_dt <- get_party_predictions(m, new_data)
+      marginal_dt <- get_party_predictions(m, new_data, num.trees = num.trees)
       if(length(predicted.outcome) == 2) predicted.outcome <- predicted.outcome[2]
   }
 

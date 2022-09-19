@@ -2,7 +2,7 @@
 #'
 #' @param m A random forest of class \code{RandomForest} fit with the \code{party} package
 #' @param newdata A dataframe containing the new data to be predicted by the model
-#' @param num.trees Number of trees from which to extract predictions.
+#' @param num.trees Number of trees from which to extract predictions. Default is 500.
 #'
 #' @author Jason Grafmiller
 #'
@@ -13,7 +13,7 @@
 #'
 #' @examples
 #' \dontrun{}
-get_party_predictions <- function(m, newdata, num.trees){
+get_party_predictions <- function(m, newdata, num.trees = 500L){
 
   # get the list of which columns are factors. This is needed for pulling out
   # the information of each tree
