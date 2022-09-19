@@ -2,6 +2,7 @@
 #'
 #' @param m A random forest of class \code{RandomForest} fit with the \code{party} package
 #' @param newdata A dataframe containing the new data to be predicted by the model
+#' @param num.trees Number of trees from which to extract predictions.
 #'
 #' @author Jason Grafmiller
 #'
@@ -12,7 +13,7 @@
 #'
 #' @examples
 #' \dontrun{}
-get_party_predictions <- function(m, newdata){
+get_party_predictions <- function(m, newdata, num.trees){
 
   # get the list of which columns are factors. This is needed for pulling out
   # the information of each tree
@@ -26,9 +27,11 @@ get_party_predictions <- function(m, newdata){
 
   # the list of terminal nodes into which each observation falls for each tree
   where_list <- rf1@get_where(newdata = newdata)
+  trees_i <- sample(seq_along(where_list), num.trees)
+  where_list <- where_list[trees_i]
 
   tree_prediction_list <- lapply(
-    seq_along(where_list),
+    trees_i,
     function(i){
       # get an individual tree from RF
       cur_tree <- party:::prettytree(rf1@ensemble[[i]],
