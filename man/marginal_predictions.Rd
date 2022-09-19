@@ -14,7 +14,7 @@ marginal_predictions(
 )
 }
 \arguments{
-\item{m}{Random forest model. Must be of class \code{ranger}.}
+\item{m}{Random forest model. Must be of class \code{ranger} or \code{RandomForest}.}
 
 \item{data}{Dataset used to fit model}
 
