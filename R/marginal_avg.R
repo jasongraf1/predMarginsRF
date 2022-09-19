@@ -73,8 +73,7 @@ marginal_avg <- function(marginal_preds, target.vars, ext.vars = NULL,
     binned_d <- data_dt
   }
 
-  # # Create dataframe of weights
-  # # TO DO: adjust for isolated weights
+  # Create dataframe of weights
   if(wt == "joint"){
     count_dt <- ftable(binned_d[, ..peripheral_vars]) |>
       as.data.frame() |>
