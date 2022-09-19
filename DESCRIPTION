@@ -1,6 +1,6 @@
 Package: predictiveMargins
 Title: Predictive margins for random forests
-Version: 0.4.0
+Version: 0.8.0
 Authors@R: c(
     person(
     "Jason", "Grafmiller", 
@@ -25,7 +25,8 @@ LazyData: true
 URL: https://github.com/jasongraf1/predictiveMargins
 Imports:
   data.table,
-  ranger
+  ranger,
+  party
 Suggests: 
     knitr,
     rmarkdown
