@@ -17,25 +17,25 @@ get_party_predictions <- function(m, newdata, num.trees = 500L){
 
   # get the list of which columns are factors. This is needed for pulling out
   # the information of each tree
-  fctrs <- lapply(rf1@data@get("input"), function(x) if(is.factor(x)) levels(x))
+  fctrs <- lapply(m@data@get("input"), function(x) if(is.factor(x)) levels(x))
 
   # for getting the terminal nodes for the new data, we need to make sure
   # the column classes in the new data match those in the training data exactly
   newdata[names(newdata)] <- lapply(names(newdata), function(x) {
-    match.fun(paste0("as.", class(rf1@data@get("input")[[x]])))(newdata[[x]])
+    match.fun(paste0("as.", class(m@data@get("input")[[x]])))(newdata[[x]])
   })
 
   # the list of terminal nodes into which each observation falls for each tree
-  where_list <- rf1@get_where(newdata = newdata)
+  where_list <- m@get_where(newdata = newdata)
   trees_i <- sample(seq_along(where_list), num.trees)
-  where_list <- where_list[trees_i]
+  # where_list <- where_list[trees_i]
 
   tree_prediction_list <- lapply(
     trees_i,
     function(i){
       # get an individual tree from RF
-      cur_tree <- party:::prettytree(rf1@ensemble[[i]],
-                                     inames = names(rf1@data@get("input")),
+      cur_tree <- party:::prettytree(m@ensemble[[i]],
+                                     inames = names(m@data@get("input")),
                                      ilevels = fctrs)
 
       # Just use the data from the tree to find the terminal nodes, pull out their
@@ -60,10 +60,18 @@ get_party_predictions <- function(m, newdata, num.trees = 500L){
 
       terminal_preds_wide <- dcast(terminal_preds_dt, name ~ type.y)[, !c("terminal")]
 
+      pred_cols <- names(terminal_preds_wide)[grepl("prediction", names(terminal_preds_wide))]
+      terminal_preds_wide[ , (pred_cols) := lapply(.SD, as.numeric), .SDcols = pred_cols]
+
       # the responses from the random forest
-      response <- rf1@responses
+      response <- m@responses
       levs <- levels(response@variables[[1]])
-      names(terminal_preds_wide)[grepl("prediction", names(terminal_preds_wide))] <- paste0(levs, "_prob")
+      if(length(levs) == 2){
+        terminal_preds_wide <- terminal_preds_wide[, !c("prediction1")]
+        names(terminal_preds_wide)[grepl("prediction", names(terminal_preds_wide))] <- paste0(levs[2], "_prob")
+      } else{
+        names(terminal_preds_wide)[grepl("prediction", names(terminal_preds_wide))] <- paste0(levs, "_prob")
+      }
 
       # the list of terminal nodes into which each observation falls into for each tree
       cur_where_dt <- data.table(nodeID = as.character(where_list[[i]]))
@@ -77,8 +85,8 @@ get_party_predictions <- function(m, newdata, num.trees = 500L){
       newdata_dt$nodeID <- as.character(where_list[[i]])
 
       new_pred_dt <- merge(newdata_dt, pred_dt, all.x = TRUE, by = "nodeID")
-
-      return(new_pred_dt)
+      # leave out nodeID column
+      return(new_pred_dt[, !c("nodeID")])
     })
 
   marginal_dt <- data.table::rbindlist(tree_prediction_list)
