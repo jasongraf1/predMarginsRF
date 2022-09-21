@@ -32,7 +32,7 @@
 #' \dontrun{
 #'
 #' }
-marginal_predictions <- function(m, data, num.trees = 500L, n.breaks = 10L,
+tree_predictions <- function(m, data, num.trees = 500L, n.breaks = 10L,
                                  verbose = TRUE, breaks = NULL){
   require(data.table) # use data.table because the results can be very large
 
@@ -162,7 +162,7 @@ marginal_predictions <- function(m, data, num.trees = 500L, n.breaks = 10L,
     num.trees = num.trees
   )
 
-  class(marginal_preds) <- "marginalPreds"
+  class(marginal_preds) <- "treePredictions"
 
   return(marginal_preds)
 }
