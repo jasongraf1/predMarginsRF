@@ -1,4 +1,4 @@
-#' Get marginal predictions from a random forest
+#' Get tree predictions for all predictor combinations in random forest
 #'
 #' @param m Random forest model. Must be of class \code{ranger} or \code{RandomForest}.
 #' @param vars Character string of targeted predictor variable names from which to derive marginal predictions. Default is all predictors in \code{m} (not recommended).
@@ -13,7 +13,7 @@
 #'
 #' @details Add details here
 #'
-#' @return A \code{list} of class \code{marginalPreds}.
+#' @return A \code{list} of class \code{treePredictions}.
 #' \describe{
 #'  \item{\code{predictions}}{A \code{data.table} of the marginal predictions from the model}
 #'  \item{\code{model}}{The name of the model}
