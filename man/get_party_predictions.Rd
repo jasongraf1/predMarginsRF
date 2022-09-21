@@ -4,14 +4,14 @@
 \alias{get_party_predictions}
 \title{Get predictions for trees from a \code{party} forest}
 \usage{
-get_party_predictions(m, newdata, num.trees)
+get_party_predictions(m, newdata, num.trees = 500L)
 }
 \arguments{
 \item{m}{A random forest of class \code{RandomForest} fit with the \code{party} package}
 
 \item{newdata}{A dataframe containing the new data to be predicted by the model}
 
-\item{num.trees}{Number of trees from which to extract predictions.}
+\item{num.trees}{Number of trees from which to extract predictions. Default is 500.}
 }
 \value{
 A \code{data.table} object of the predictions for each tree in the forest
