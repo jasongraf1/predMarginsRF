@@ -18,7 +18,7 @@
 #'
 #' @examples
 #' \dontrun{}
-predictive_contrasts <- function(marginal_preds, target.var,
+predicted_contrasts <- function(marginal_preds, target.var,
                                interval = c(.05, .95),
                                verbose = FALSE){
   require(data.table) # use data.table because the results can be very large
