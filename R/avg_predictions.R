@@ -35,7 +35,7 @@ avg_predictions <- function(marginal_preds, target.vars, equal.wt = NULL,
   n.breaks <- marginal_preds$n.breaks
   mar_table <- marginal_preds$predictions
   data <- marginal_preds$data
-  pred_outcome <- paste0(marginal_preds$predicted.outcome, "_prob")
+  pred_outcome <- paste0(marginal_preds$predicted.outcome, "_pred")
 
   # Convert data and tables to data.table objects for faster processing
   if(!is.data.table(mar_table)) mar_table <- as.data.table(mar_table)
