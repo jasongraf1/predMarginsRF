@@ -29,7 +29,7 @@ avg_predictions <- function(marginal_preds, target.vars, equal.wt = NULL,
                          verbose = TRUE){
   require(data.table)
 
-  if(class(marginal_preds) != "marginalPreds") stop(paste(marginal_preds, 'is not of class "marginalPreds"'))
+  if(class(marginal_preds) != "treePredictions") stop(paste(marginal_preds, 'is not of class "treePredictions"'))
 
   wt <- match.arg(wt)
   n.breaks <- marginal_preds$n.breaks
