@@ -23,7 +23,7 @@
 #' @examples
 #' \dontrun{}
 #' @importFrom data.table ":="
-weighted_predictions <- function(marginal_preds, target.vars, equal.wt = NULL,
+avg_predictions <- function(marginal_preds, target.vars, equal.wt = NULL,
                          wt = c("iso", "joint", "all"),
                          interval = c(.05, .95),
                          verbose = TRUE){
