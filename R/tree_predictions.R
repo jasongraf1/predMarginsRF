@@ -69,74 +69,25 @@ tree_predictions <- function(m, data, num.trees = 500L, n.breaks = 10L,
   if(verbose) message("Generating predictions for ", nrow(new_data),
                       " combinations from ", length(full_vars), " predictor variables.")
 
+  # ranger model --------------
   if(class(m) == "ranger"){
     preds <- predict(m, data = new_data, predict.all = TRUE, type = "response")
 
-    preds_df <- preds$predictions[, m$forest$class.values[1], ] |>
-      as.data.frame()
-
-    names(preds_df) <- paste("tree", 1:dim(preds$predictions)[3], sep = ".")
-
-    # Get the outcomes of the model
-    outcomes <- m$forest$levels
-
-    # Allow for using custom number of trees in the predictions. Setting this
-    # lower keeps the data.frames to a more manageable size. Advice is to fit
-    # RFs with at least 1000 trees, but we set the default number of trees to
-    # get predictions from at 500.
-    # Alternatively, we can just get the num.trees directly from the model:
-    # if(is.null(num.trees)) num.trees <- m$num.trees
-
-    # If the number of trees is less than the values specified, just use the
-    # number generated for the model.
-    if(m$num.trees < num.trees) num_trees <- m$num.trees
-
-    # Randomly sample num.trees from the forest
-    preds_df <- preds_df[, sample(1:ncol(preds_df), num.trees)]
-
-    # Allow for n > 2 level outcomes.
-    if(length(outcomes) > 2){
-
-      # Create a vector of column names that will be in the resulting data.table
-      predicted.outcome <- outcomes
-
-      # Create list of data.tables each with predicted probability for one outcome
-      # level.
-
-      outcome_list <- lapply(
-        seq_along(outcomes),
-        function(i) {
-          label <- outcomes[i]
-          preds_df <- preds$predictions[, i, ] |>
-            as.data.frame()
-          names(preds_df) <- paste("tree", 1:dim(preds$predictions)[3], sep = ".")
-
-          # Reshape the dataframe to long format
-          # Using data.table is MUCH faster than base R. These are likely to be very
-          # big objects so speed counts :)
-          outcome_dt <- cbind(new_data, preds_df) |>
-            as.data.table() |>
-            melt(id.vars = full_vars, measure.vars = names(preds_df),
-                 variable.name = "tree", value.name = paste0(label, "_prob"))
-
-          return(outcome_dt)
-        })
-
-      # Merge data.tables for the respective outcomes
-      marginal_dt <- Reduce(
-        function(...) {
-          merge(..., by = NULL, all = TRUE, sort = FALSE)
-        },
-        outcome_list
-      )
-    } else { # if outcome is binary
-
-      predicted.outcome <- m$forest$levels[m$forest$class.values[1]]
-      label <- paste0(predicted.outcome, "_prob")
-      preds_df <- preds$predictions[, m$forest$class.values[1], ] |>
+    if(m$forest$treetype == "Regression") {
+      # outcome is CONTINUOUS
+      # this is a dataframe of N obs rows by M tree columns
+      preds_df <- preds$predictions |>
         as.data.frame()
 
-      names(preds_df) <- paste("tree", 1:dim(preds$predictions)[3], sep = ".")
+      names(preds_df) <- paste("tree", 1:m$num.trees, sep = ".")
+
+      # Randomly sample num.trees from the forest
+      preds_df <- preds_df[, sample(1:ncol(preds_df), num.trees)]
+
+      # Get the outcome column name in the data and make a name 'OUTCOME_pred' for
+      # the model predictions
+      predicted.outcome <- all.vars(as.list(m$call)[[2]])[1]
+      label <- paste0(predicted.outcome, "_pred")
 
       # Reshape the dataframe to long format
       # Using data.table is MUCH faster than base R. These are likely to be very
@@ -145,11 +96,86 @@ tree_predictions <- function(m, data, num.trees = 500L, n.breaks = 10L,
         as.data.table() |>
         melt(id.vars = full_vars, measure.vars = names(preds_df),
              variable.name = "tree", value.name = label)
+      marginal_dt
+    } else {
+      # outcome is CATEGORICAL
+      preds_df <- preds$predictions[, m$forest$class.values[1], ] |>
+        as.data.frame()
 
-    }} else if (class(m) == "RandomForest"){
-      marginal_dt <- get_party_predictions(m, new_data, num.trees = num.trees)
-      if(length(predicted.outcome) == 2) predicted.outcome <- predicted.outcome[2]
-  }
+      names(preds_df) <- paste("tree", 1:dim(preds$predictions)[3], sep = ".")
+
+      # Get the outcomes of the model
+      outcomes <- m$forest$levels
+
+      # Allow for using custom number of trees in the predictions. Setting this
+      # lower keeps the data.frames to a more manageable size. Advice is to fit
+      # RFs with at least 1000 trees, but we set the default number of trees to
+      # get predictions from at 500.
+      # Alternatively, we can just get the num.trees directly from the model:
+      # if(is.null(num.trees)) num.trees <- m$num.trees
+
+      # If the number of trees is less than the values specified, just use the
+      # number generated for the model.
+      if(m$num.trees < num.trees) num_trees <- m$num.trees
+
+      # Randomly sample num.trees from the forest
+      preds_df <- preds_df[, sample(1:ncol(preds_df), num.trees)]
+
+      # Allow for n > 2 level outcomes.
+      if(length(outcomes) > 2){
+
+        # Create a vector of column names that will be in the resulting data.table
+        predicted.outcome <- outcomes
+
+        # Create list of data.tables each with predicted probability for one outcome
+        # level.
+
+        outcome_list <- lapply(
+          seq_along(outcomes),
+          function(i) {
+            label <- outcomes[i]
+            preds_df <- preds$predictions[, i, ] |>
+              as.data.frame()
+            names(preds_df) <- paste("tree", 1:dim(preds$predictions)[3], sep = ".")
+
+            # Reshape the dataframe to long format
+            # Using data.table is MUCH faster than base R. These are likely to be very
+            # big objects so speed counts :)
+            outcome_dt <- cbind(new_data, preds_df) |>
+              as.data.table() |>
+              melt(id.vars = full_vars, measure.vars = names(preds_df),
+                   variable.name = "tree", value.name = paste0(label, "_prob"))
+
+            return(outcome_dt)
+          })
+
+        # Merge data.tables for the respective outcomes
+        marginal_dt <- Reduce(
+          function(...) {
+            merge(..., by = NULL, all = TRUE, sort = FALSE)
+          },
+          outcome_list
+        )} else { # if outcome is binary
+
+        predicted.outcome <- m$forest$levels[m$forest$class.values[1]]
+        label <- paste0(predicted.outcome, "_prob")
+        preds_df <- preds$predictions[, m$forest$class.values[1], ] |>
+          as.data.frame()
+
+        names(preds_df) <- paste("tree", 1:dim(preds$predictions)[3], sep = ".")
+
+        # Reshape the dataframe to long format
+        # Using data.table is MUCH faster than base R. These are likely to be very
+        # big objects so speed counts :)
+        marginal_dt <- cbind(new_data, preds_df) |>
+          as.data.table() |>
+          melt(id.vars = full_vars, measure.vars = names(preds_df),
+               variable.name = "tree", value.name = label)
+
+      }}} else if (class(m) == "RandomForest"){
+        marginal_dt <- get_party_predictions(m, new_data, num.trees = num.trees)
+        if(length(predicted.outcome) == 2) predicted.outcome <- predicted.outcome[2]
+      }
 
   # Create list of relevant information and data
   marginal_preds <- list(

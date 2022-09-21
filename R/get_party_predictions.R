@@ -66,11 +66,17 @@ get_party_predictions <- function(m, newdata, num.trees = 500L){
       # the responses from the random forest
       response <- m@responses
       levs <- levels(response@variables[[1]])
-      if(length(levs) == 2){
+
+      if(is.null(levels(response@variables[[1]]))) {
+        # outcome is continuous
+        label <- names(response@variables)
+        names(terminal_preds_wide)[grepl("prediction", names(terminal_preds_wide))] <- paste0(label, "_pred")
+      } else if(length(levs) == 2){
+        # outcome is binary
         terminal_preds_wide <- terminal_preds_wide[, !c("prediction1")]
-        names(terminal_preds_wide)[grepl("prediction", names(terminal_preds_wide))] <- paste0(levs[2], "_prob")
-      } else{
-        names(terminal_preds_wide)[grepl("prediction", names(terminal_preds_wide))] <- paste0(levs, "_prob")
+        names(terminal_preds_wide)[grepl("prediction", names(terminal_preds_wide))] <- paste0(levs[2], "_pred")
+      } else {
+        names(terminal_preds_wide)[grepl("prediction", names(terminal_preds_wide))] <- paste0(levs, "_pred")
       }
 
       # the list of terminal nodes into which each observation falls into for each tree
@@ -93,4 +99,3 @@ get_party_predictions <- function(m, newdata, num.trees = 500L){
 
   return(marginal_dt)
 }
-
