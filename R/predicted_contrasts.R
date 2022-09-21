@@ -26,7 +26,7 @@ predicted_contrasts <- function(marginal_preds, target.var,
   if(class(marginal_preds) != "treePredictions") stop(paste(marginal_preds, 'is not of class "treePredictions"'))
 
   mar_table <- marginal_preds$predictions
-  pred_outcome <- paste0(marginal_preds$predicted.outcome, "_prob")
+  pred_outcome <- paste0(marginal_preds$predicted.outcome, "_pred")
 
   if(!is.data.table(mar_table)) mar_table <- as.data.table(mar_table)
 
