@@ -40,7 +40,9 @@ tree_predictions <- function(m, data, num.trees = 500L, n.breaks = 10L,
     full_vars <- m$forest$independent.variable.names
   } else if (class(m) == "RandomForest"){
     full_vars <- names(m@data@get("input"))
-    predicted.outcome <- m@responses@levels[[1]]
+    predicted.outcome <- ifelse(is.null(m@responses@levels[[1]]),
+      names(m@responses@variables),
+      m@responses@levels[[1]])
   }
 
   # create list of values for the full combination grid.
