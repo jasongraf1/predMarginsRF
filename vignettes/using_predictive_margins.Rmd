@@ -17,11 +17,11 @@ knitr::opts_chunk$set(
 )
 ```
 
+# Introduction
+
 This vignette demonstrates how to use the core functions in the `{predictiveMargins}` package. For details of the method and theoretical motivation see Sönning & Grafmiller (2022), [Seeing the wood for the trees: Predictive margins for random forests](https://doi.org/10.31234/osf.io/jr8yk).
 
-## Libraries
-
-For this vignette we'll the following basic libraries. 
+For this vignette we'll load the following basic libraries. 
 
 ```{r setup}
 library(tidyverse) # for  data wrangling and plotting
@@ -40,16 +40,19 @@ Load the library as usual.
 library(predictiveMargins)
 ```
 
+We'll start with classification cases first, then look at an example with a continuous outcome.
 
-## Data
+# Predicting disctrete outcomes (classification)
 
-For this tutorial, we'll use the `written_genitives` dataset of English genitive constructions (*the children's voices* [*s*-genitive] vs. *the voices of the children* [*of*-genitive]) included in the package and discussed Sönning & Grafmiller (2022). See `?written_genitives` for more on the dataset.
+In the case of categorical outcomes, our predictions will be the probability of one or more classes.
+
+For this tutorial, we'll use actual datasets from linguistic research. We start with the `written_genitives` dataset of English genitive constructions (*the children's voices* [*s*-genitive] vs. *the voices of the children* [*of*-genitive]) included in the package and discussed in Sönning & Grafmiller (2022). See `?written_genitives` for more on the dataset.
 
 ```{r}
 glimpse(written_genitives)
 ```
 
-We're interested in exploring the featues that correlate with use of different constructions. We know, for instance, that animate (i.e. human) possessors tend to co-occur more often with the *s*-genitive, and inanimate possessors more with the *of*-genitive.
+We're interested in exploring the features that correlate with use of different constructions. We know, for instance, that animate (i.e. human) possessors tend to co-occur more often with the *s*-genitive, and inanimate possessors more with the *of*-genitive.
 
 ```{r}
 ggplot(written_genitives, aes(Possessor_Animacy3, fill = Type)) +
@@ -59,6 +62,7 @@ ggplot(written_genitives, aes(Possessor_Animacy3, fill = Type)) +
        subtitle = "In 1960s and 1990s written American English") +
   theme_classic()
 ```
+
 So the aim is to build a model that can predict which construction will be used given a set of contextual features.
 
 ## Fit RF model with `{ranger}`
@@ -79,14 +83,14 @@ glimpse(written_genitives)
 ```
 
 
-Define the formula using some contextual features known to correlate with the use of genitive constructions, e.g. the genre, the animacy, noun type (proper vs. common), length (in words), frequency ('thematicity') of the possessor, and whether the possessor phrase ends in a sibilant sound.
+Define the formula using some contextual features known to correlate with the use of genitive constructions, e.g. GENRE, ANIMACY, NOUN TYPE (proper vs. common), LENGTH (in words), THEMATICITY (text frequency) of the possessor, and FINAL SIBILANT (whether the possessor phrase ends in a sibilant sound).
 
 ```{r}
 fmla <- Type ~ Genre + Possessor_Animacy3 + Possessor_NP_Type +
   Possessor_Length + Possessor_Thematicity + Final_Sibilant
 ```
 
-Fit the model. Here we use a probability forest rather than a classification forest by setting `probability = TRUE`. In a real case we would also tune the model's hyperparameters, e.g. with the `{tidymodels}` or `{tuneRanger}` packages. But this will only affect the performance of the model, and does not affect the functions in `{predictiveMargins}`, so we don't bother here.
+Fit the model. Here we use a probability forest rather than a classification forest by setting `probability = TRUE`. In a real case we would also tune the model's hyperparameters, e.g. with the `{tidymodels}` or `{tuneRanger}` packages. But this will only affect the performance of the model, and does not affect the functions in `{predictiveMargins}`, so we don't bother here. See `?ranger` for more details.
 
 ```{r ranger-rf}
 library(ranger)
@@ -105,7 +109,7 @@ rf_ranger
 
 ### Evaluate model
 
-Before generating the predictive margins, it's necessary to evaluate the model. Results derived from a poorly performing model are not reliable, so this is always a necessary first step. 
+Before exploring the forest predictions, it's necessary to evaluate the model. Results derived from a poorly performing model are not reliable, so this is always a necessary first step. 
 
 The `{caret}` package provides some good diagnostic tools. First we create a dataframe of the predicted probabilities and the observed vs. predicted outcome. 
 
@@ -119,7 +123,7 @@ rf_ranger_preds <- rf_ranger$predictions |>
 head(rf_ranger_preds)
 ```
 
-Use the `twoClassSummary()` function to get a quick assessment of the performance of the RF model. Here we focus on the area under the Receiver Operating Characteristic curve (`ROC`), which is a reasonable measure of how well the model discriminates between two outcomes. The scores range from .5 (chance) to 1 (perfect discrimination). Values above .8 are considered good performance.
+Use the `twoClassSummary()` function to get a quick assessment of the performance of the RF model. Here we focus on the area under the Receiver Operating Characteristic curve (`ROC`), which is a reasonable measure of how well the model discriminates between two outcomes. The scores range from .5 (chance) to 1 (perfect discrimination). Values above .8 are considered good performance. The discriminatory ability of the current RF model is .912. The interpretation of this measure is fairly straightforward: If we pick a true *s*-genitive and a true *of*-genitive at random from the data, there is a 91% chance that our RF model gives the true *s*-genitive a higher probability of being an *s*-genitive.
 
 ```{r}
 caret::twoClassSummary(
@@ -141,9 +145,9 @@ caret::confusionMatrix(
 
 Our model is a pretty good one (more information on these measures can be found on the `{caret}` documentation here: [https://topepo.github.io/caret/measuring-performance.html](https://topepo.github.io/caret/measuring-performance.html).
 
-## Fit model with `{party}`
+## Fit RF model with `{party}`
 
-Now we try with the `{party}` package. Again, in a real case we would tune the `mtry` and other hyperparameters. Note that `{party}` forests run much more slowly than `{ranger}`.
+Now we try a forest with the `{party}` package. Again, in a real case we would tune the `mtry` and other hyperparameters. Note that `{party}` forests run much more slowly than `{ranger}`.
 
 ```{r party-rf, cache=TRUE}
 library(party)
@@ -158,7 +162,7 @@ rf_party
 
 ### Evaluate model
 
-Once again, evaluate the model. We can get the class-specific predicted probabilities with `treeresponse()` and then bind them into a dataframe. This also takes time, so we won't run it here. But the code is included below for illustration.
+Once again, evaluate the model. We can get the class-specific predicted probabilities with `treeresponse()` and then bind them into a dataframe. This also takes a long time, so we won't run it here, but the code is included below for illustration.
 
 ```{r party-rf-preds, eval=FALSE}
 # not run
@@ -201,9 +205,10 @@ caret::confusionMatrix(
 )
 ```
 
-## Get marginal predictions
 
-To get the marginal predictions of the trees, we use the `marginal_predictions()` function. The two obligatory arguments are the model `rf_ranger` and the dataset used to train the model, `written_genitives`. The third argument `breaks = list(Possessor_Length = c(1, 2, 3, 4))` tells the function to calculate predictions only for values of `Possessor_Length` at 1, 2, 3, and 4. For any other continuous predictor variables it will use *n* evenly spaced points (10 by default) spanning the range of the variable. If `breaks` is not specified, all continuous predictors will use the same number of points, set by `n.breaks`.
+## Get predicted probabilities
+
+To get the predicted probabilities of the trees, we use the `tree_predictions()` function. The two obligatory arguments are the model `rf_ranger` and the dataset used to train the model, `written_genitives`. The third argument `breaks = list(Possessor_Length = c(1, 2, 3, 4))` tells the function to calculate predictions only for values of `Possessor_Length` at 1, 2, 3, and 4. For any other continuous predictor variables it will use *n* evenly spaced points (10 by default) spanning the range of the variable. If `breaks` is not specified, all continuous predictors will use the same number of points, set by `n.breaks`.
 
 Additional optional arguments include:
 
@@ -212,76 +217,74 @@ Additional optional arguments include:
 - `verbose`: If `TRUE` additional information will be printed about the dataset.
 
 ```{r}
-marginal_preds <- marginal_predictions(
+tree_preds_ranger <- tree_predictions(
   rf_ranger, 
   written_genitives, 
   breaks = list(Possessor_Length = c(1, 2, 3, 4)) # only calculate predictions for these values
   )
 ```
 
-`marginal_preds` is a list. The prediction dataframe is contained in `marginal_preds$predictions`.
+`tree_preds_ranger` is a list. The dataframe with the predicted probabilities is contained in `tree_preds_ranger$predictions`.
 
 ```{r}
-head(marginal_preds$predictions)
+head(tree_preds_ranger$predictions)
 ```
 
 
 Now try the same with `rf_party`. As always with this package, it takes longer to run...
 
 ```{r}
-marginal_preds_party <- marginal_predictions(
+tree_preds_party <- tree_predictions(
   rf_party, 
   written_genitives, 
-  breaks = list(Possessor_Length = c(1, 2, 3, 4)) # only calculate predictions for these values
+  breaks = list(Possessor_Length = c(1, 2, 3, 4)), # only calculate predictions for these values
+  verbose = FALSE
   )
-
-head(marginal_preds_party$predictions)
+head(tree_preds_party$predictions)
 ```
 
 
-See `help("marginal_predictions")` for more information.
+See `help("tree_predictions")` for more information.
 
 
+### Average predictions for a categorical predictor
 
+First we'll calculate predictive margins for the targeted variable `Possessor_Animacy3`. All other predictors in the model (i.e. `Genre`, `Possessor_Animacy3`, `Possessor_NP_Type`, `Possessor_Length` `Possessor_Thematicity`, `Final_Sibilant`) are therefore peripheral variables, which means that we need to average over their levels/values. As discussed in Sönning & Grafmiller (2022), we can use different weighting schemes when averaging over peripheral predictors. There, a distinction is made between external and internal variables. For external variables, is seems sensible to form simple averages; for internal variables, we would usually prefer weighted averages, with weights reflecting the observed distribution of the predictor in the data.
 
+The function `avg_predictions()` takes two arguments, the model and a character vector of the names of the targeted variable(s) (`target.vars = "..."`) in the model for which to obtain predictive margins. Additional optional arguments include:
 
-### Average marginal predictions for a categorical predictor
-
-First we'll calculate the weighted average marginal predictions for the association of the target variable `Possessor_Animacy3` with genitive construction. See Sönning & Grafmiller (2022) for full discussion of the weighting schemes used.
-
-
-The function `marginal_avg()` takes two arguments, the model and a character vector of the names of the target variables in the model for which to average the predictions. Additional optional arguments include:
-
-- `ext.vars`: Character string of external predictor variable names across which equal weighting will be applied.
-- `wt`: Character string indicating the type of weighting to be applied to the calculation of mean predictions. - `interval`: The lower and upper quantiles for the distribution of predicted probabilities. Default is `c(.05, .95)`
+- `equal.wt`: Character string of (external) predictor variable names across which equal weighting (i.e. simple averages) will be applied.
+- `wt`: Character string indicating the type of weighting to be applied to those peripheral predictors **not** specified in `ext.vars`. 
+- `interval`: The lower and upper quantiles for the percentile interval summarizing the distribution of predicted probabilities across the trees in the forest. Default is `c(.05, .95)`, for a 90% percentile interval.
 - `verbose`: If `TRUE` additional information will be printed about the dataset.
 
-The default weighting is the isolated weighting (`"iso"`), where the weights are based on the expected distributions of all combinations of the peripheral variables (i.e. those **not** `Possessor_Animacy3`), calculated from the independent marginal distributions of each peripheral predictor.
+The default weighting is the isolated weighting (`"iso"`), where the weights are based on the expected distribution of all combinations of the peripheral variables (i.e. those **not** `Possessor_Animacy3` and **not** specified in the `ext.vars` argument), calculated from the independent marginal (overall) distribution of each peripheral predictor in the dataset.
 
 ```{r}
-animacy_mar_avg_iso <- marginal_avg(
-  marginal_preds, 
+# messages can be turned off with `verbose = FALSE`
+animacy_avg_iso <- avg_predictions(
+  tree_preds_ranger, 
   target.vars = "Possessor_Animacy3"
   )
-animacy_mar_avg_iso
+animacy_avg_iso
 ```
 
 Now try the joint weighting.
 
 ```{r}
-animacy_mar_avg_joint <- marginal_avg(marginal_preds, "Possessor_Animacy3", wt = "joint")
+animacy_avg_joint <- avg_predictions(tree_preds_ranger, "Possessor_Animacy3", wt = "joint")
 ```
 
-We can plot these and compare. The differences are often negligible, but may vary considerably in some cases.
+We can plot these and compare. Here, the differences are negligible, but they can vary (considerably) in some cases.
 
 ```{r}
 bind_rows(
-  animacy_mar_avg_iso |>
+  animacy_avg_iso |>
     mutate(weighting = "isolated"),
-  animacy_mar_avg_joint |>
+  animacy_avg_joint |>
     mutate(weighting = "joint")
 ) |>
-  ggplot(aes(x = Possessor_Animacy3, y = mean_s_prob, color = weighting)) +
+  ggplot(aes(x = Possessor_Animacy3, y = mean_s_pred, color = weighting)) +
   geom_hline(yintercept = .5, color = "grey", linetype = "dashed") +
   geom_line(aes(group = weighting, linetype = weighting), position = position_dodge(width = .2)) +
   geom_pointrange(aes(ymin = lower, ymax = upper, shape = weighting),
@@ -292,9 +295,10 @@ bind_rows(
 We can even compare the different random forest methods by calculating the margins for the two methods.
 
 ```{r}
-animacy_mar_avg_iso_party <- marginal_avg(
-  marginal_preds_party, 
-  target.vars = "Possessor_Animacy3"
+animacy_avg_iso_party <- avg_predictions(
+  tree_preds_party, 
+  target.vars = "Possessor_Animacy3",
+  verbose = FALSE
   )
 ```
 
@@ -302,12 +306,12 @@ Plot the two results.
 
 ```{r}
 bind_rows(
-  animacy_mar_avg_iso |>
+  animacy_avg_iso |>
     mutate(method = "ranger"),
-  animacy_mar_avg_iso_party |>
+  animacy_avg_iso_party |>
     mutate(method = "party")
 ) |>
-  ggplot(aes(x = Possessor_Animacy3, y = mean_s_prob, color = method)) +
+  ggplot(aes(x = Possessor_Animacy3, y = mean_s_pred, color = method)) +
   geom_hline(yintercept = .5, color = "grey", linetype = "dashed") +
   geom_line(aes(group = method, linetype = method), position = position_dodge(width = .2)) +
   geom_pointrange(aes(ymin = lower, ymax = upper, shape = method),
@@ -315,32 +319,116 @@ bind_rows(
   theme_classic()
 ```
 
+### Average predictions for a continuous predictor
+
+Calculating predictions for continuous predictors is easy as well.
+
+```{r}
+# use party model
+avg_predictions(
+  tree_preds_party, "Possessor_Thematicity", wt = "iso", verbose = F
+  ) |>
+  ggplot(aes(Possessor_Thematicity, mean_s_pred)) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .3) +
+  geom_line(aes(group = 1)) +
+  theme_classic() + ggtitle("Thematicity in {party} model")
+```
+
+For `Possessor_Length` recall that we only calculated predictions for values of 1 through 4. 
+
+```{r}
+avg_predictions(tree_preds_party, "Possessor_Length", wt = "iso", verbose = F) |>
+  ggplot(aes(Possessor_Length, mean_s_pred)) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .3) +
+  geom_line(aes(group = 1)) +
+  theme_classic() + ggtitle("Possessor Length in {party} model")
+```
+
+If we want more values for this predictor, we'll need to recalculate the tree predictions, setting the `break` argument to a different set of numbers.
+ 
+```{r}
+tree_preds_party2 <- tree_predictions(
+  rf_party, 
+  written_genitives, 
+  breaks = list(Possessor_Length = 1:8) # only calculate predictions for these values
+  )
+```
+ 
+Now re-generate the plot.
+ 
+```{r}
+avg_predictions(tree_preds_party2, "Possessor_Length", wt = "iso", verbose = F) |>
+  ggplot(aes(Possessor_Length, mean_s_pred)) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .3) +
+  geom_line(aes(group = 1)) + 
+  scale_x_continuous(breaks = 1:8) + # put the ticks at integers
+  theme_classic()
+```
+
+We can also examine more fine-grained values of `Possessor_Thematicity`, e.g. by setting the `n.breaks` to 30, since we are not necessarily interested in specific values of this predictor. *Note again that increasing this number can greatly impact speed and memory cost, especially when there are many other predictor variables. If there are many continuous predictors, we recommend keeping `n.breaks` small and setting the values for specific predictors inside `breaks`.*
+
+```{r}
+tree_preds_party3 <- tree_predictions(
+  rf_party, 
+  written_genitives, 
+  n.breaks = 30,
+  breaks = list(Possessor_Length = 1:8) # only calculate predictions for these values
+  )
+```
+
+Now plot the new results.
+
+```{r}
+avg_predictions(tree_preds_party3, "Possessor_Thematicity", wt = "iso", verbose = F) |>
+  ggplot(aes(Possessor_Thematicity, mean_s_pred)) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .3) +
+  geom_line(aes(group = 1)) +
+  theme_classic()
+```
+
+The overall picture is not much different, but the resolution is finer. Multiple numeric predictors can be specified in the `breaks` argument.
+
+```{r eval=F}
+# not run
+# use the 10% quantile values for Possessor_Thematicity
+quantiles <- quantile(written_genitives$Possessor_Thematicity, seq(0, 1, .1))
+tree_preds_party3 <- tree_predictions(
+  rf_party, 
+  written_genitives, 
+  breaks = list(Possessor_Length = 1:8, Possessor_Thematicity = quantiles) 
+  )
+```
 
 
-#### Excluding external variables from the weighting
+### Excluding variables from the weighting
 
 Sönning & Grafmiller also discuss the possibility of excluding certain peripheral variables from the weighting. This amounts to weighting predictions equally across all values of these 'external' predictors when computing the average predictions.
 
 Here we exclude `Genre` from the weighting in the `{party}` model.
 
 ```{r}
-marginal_avg(marginal_preds_party, "Possessor_Animacy3", ext.vars = "Genre", verbose = FALSE)
+avg_predictions(tree_preds_party, "Possessor_Animacy3", equal.wt = "Genre", verbose = FALSE) |> 
+  dplyr::arrange(Possessor_Animacy3)
 ```
+
 Compare this to the case where `Genre` is included in the weighting. 
 
 ```{r}
-animacy_mar_avg_iso_party
+animacy_avg_iso_party |> 
+  dplyr::arrange(Possessor_Animacy3)
 ```
+
 Here we see that the difference is very minor.
 
-#### Interaction effects
 
-Multivariate associations among predictor variables and the outcome (i.e. "interaction effects") can be calculated easily by simply including them in the vector of target variables.
+### Interaction effects
+
+Multivariate associations among predictor variables and the outcome (i.e. "interaction effects") can be calculated by simply including them in the vector of target variables.
 
 ```{r}
 # use the ranger model
-marginal_avg(marginal_preds, c("Possessor_Animacy3", "Possessor_NP_Type"), verbose = F) |> 
-  ggplot(aes(x = Possessor_Animacy3, y = mean_s_prob, color = Possessor_NP_Type)) +
+avg_predictions(tree_preds_ranger, c("Possessor_Animacy3", "Possessor_NP_Type"), verbose = F) |> 
+  ggplot(aes(x = Possessor_Animacy3, y = mean_s_pred, color = Possessor_NP_Type)) +
   geom_hline(yintercept = .5, color = "grey", linetype = "dashed") +
   geom_line(aes(group = Possessor_NP_Type), position = position_dodge(width = .2)) +
   geom_pointrange(aes(ymin = lower, ymax = upper),
@@ -352,10 +440,10 @@ marginal_avg(marginal_preds, c("Possessor_Animacy3", "Possessor_NP_Type"), verbo
 Three-way (and more) patterns are possible with this method.
 
 
-```{r fig.width=7}
-marginal_avg(marginal_preds, c("Possessor_Animacy3", "Possessor_NP_Type", "Genre"), 
+```{r fig.width=6.5, fig.height=5}
+avg_predictions(tree_preds_ranger, c("Possessor_Animacy3", "Possessor_NP_Type", "Genre"), 
              verbose = F) |> 
-  ggplot(aes(x = Possessor_Animacy3, y = mean_s_prob, color = Possessor_NP_Type)) +
+  ggplot(aes(x = Possessor_Animacy3, y = mean_s_pred, color = Possessor_NP_Type)) +
   geom_hline(yintercept = .5, color = "grey", linetype = "dashed") +
   geom_line(aes(group = Possessor_NP_Type), position = position_dodge(width = .2)) +
   geom_pointrange(aes(ymin = lower, ymax = upper),
@@ -366,104 +454,15 @@ marginal_avg(marginal_preds, c("Possessor_Animacy3", "Possessor_NP_Type", "Genre
   theme(legend.position = "bottom") 
 ```
 
-
-### Average marginal predictions for continuous predictor
-
-Calculating marginal averages for continuous predictors is easy as well.
-
-```{r}
-# use party model
-marginal_avg(marginal_preds_party, "Possessor_Thematicity", wt = "iso", verbose = F) |>
-  ggplot(aes(Possessor_Thematicity, mean_s_prob)) +
-  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .3) +
-  geom_line(aes(group = 1)) +
-  theme_classic() + ggtitle("Thematicity in {party} model")
-```
-
-```{r}
-# use ranger model
-marginal_avg(marginal_preds, "Possessor_Thematicity", wt = "iso", verbose = F) |>
-  ggplot(aes(Possessor_Thematicity, mean_s_prob)) +
-  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .3) +
-  geom_line(aes(group = 1)) +
-  theme_classic() + ggtitle("Thematicity in {ranger} model")
-```
-
-For `Possessor_Length` recall that we only calculated predictions for values of 1 through 4. 
-
-```{r}
-marginal_avg(marginal_preds, "Possessor_Length", wt = "iso", verbose = F) |>
-  ggplot(aes(Possessor_Length, mean_s_prob)) +
-  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .3) +
-  geom_line(aes(group = 1)) +
-  theme_classic()
-```
-
-If we want more values for this predictor, we'll need to recalculate the marginal predictions, setting the `break` argument to a different set of numbers.
- 
-```{r}
-marginal_preds2 <- marginal_predictions(
-  rf_ranger, 
-  written_genitives, 
-  breaks = list(Possessor_Length = 1:8) # only calculate predictions for these values
-  )
-```
- 
-Now re-generate the plot.
- 
-```{r}
-marginal_avg(marginal_preds2, "Possessor_Length", wt = "iso", verbose = F) |>
-  ggplot(aes(Possessor_Length, mean_s_prob)) +
-  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .3) +
-  geom_line(aes(group = 1)) + 
-  scale_x_continuous(breaks = 1:8) + # put the ticks at integers
-  theme_classic()
-```
-
-We can also examine more fine-grained values of `Possessor_Thematicity`, e.g. by setting the `n.breaks` to 30, since we are not necessarily interested in specific values of this predictor. *Note again that increasing this number can greatly impact speed and memory cost, especially when there are many other predictor variables. If there are many continuous predictors, we recommend keeping `n.breaks` small and setting the values for specific predictors inside `breaks`.*
-
-```{r}
-marginal_preds3 <- marginal_predictions(
-  rf_ranger, 
-  written_genitives, 
-  n.breaks = 30,
-  breaks = list(Possessor_Length = 1:8) # only calculate predictions for these values
-  )
-```
-
-Now plot the new results.
-
-```{r}
-marginal_avg(marginal_preds3, "Possessor_Thematicity", wt = "iso", verbose = F) |>
-  ggplot(aes(Possessor_Thematicity, mean_s_prob)) +
-  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .3) +
-  geom_line(aes(group = 1)) +
-  theme_classic()
-```
-
-The overall picture is not much different, but the resolution is finer. Multiple numeric predictors can be specified.
-
-```{r eval=F}
-# not run
-marginal_preds3 <- marginal_predictions(
-  rf_ranger, 
-  written_genitives, 
-  breaks = list(Possessor_Length = 1:8, Possessor_Thematicity = 30) 
-  )
-```
-
-
-#### Interactions
-
-Interactions are just as easy with continuous predictors
+Interactions are just as easy with continuous predictors.
 
 ```{r fig.width=7}
-marginal_avg(
-  marginal_preds2, 
+avg_predictions(
+  tree_preds_party2, 
   target.vars = c("Possessor_Length", "Genre"), 
   verbose = F
   ) |>
-  ggplot(aes(Possessor_Length, mean_s_prob)) +
+  ggplot(aes(Possessor_Length, mean_s_pred)) +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .3) +
   geom_line(aes(group = 1)) + 
   facet_wrap(~Genre) +
@@ -472,53 +471,86 @@ marginal_avg(
   theme_classic()
 ```
 
+Plotting interactions fo continuous predictors is not as simple, but can be done. Here the effects of LENGTH and THEMATICITY are largely independent of one another. 
 
-### Contrasts
+```{r fig.width=7}
+avg_predictions(
+  tree_preds_party2, 
+  target.vars = c("Possessor_Length", "Possessor_Thematicity"), 
+  verbose = F
+  ) |>
+  ggplot(aes(Possessor_Length, Possessor_Thematicity)) +
+  geom_raster(aes(fill = mean_s_pred)) +
+  ggtitle("S-genitive probability by\nPossessor Length and Thematicity") +
+  scale_x_continuous(breaks = 1:8) + # put the ticks at integers
+  theme_classic()
+```
+
+
+## Predicted contrasts
+
+We refer to "predicted contrasts" as the difference between two predicted outcomes for specific values (levels) of a predictor. For the targeted variable `Possessor_NP_Type`, which has two levels (common vs. proper nouns), the predicted contrast is the difference between the predicted probabilities for the two levels. For instance, if the predicted probabilities are .55 for common nouns and .70 for proper nouns, the predicted contrast is +.15. These contrasts are estimated for every combination of predictor values, averaged over all the trees in the forest. 
+
+### Predictive contrasts for binary variables
+
+For binary targeted variables, which level is subtracted from which depends on the coding of the factor. By default, R orders factor levels alphabetically. For `Possessor_NP_Type`, `common` is therefore represented (internally) as `1`, and `proper` as `2`. For binary predictors, the first level (`common`) is subtracted from the second (`proper`).
+
+The function `predicted_contrasts()` takes two arguments, the model and a character vector of the names of the targeted variable(s) (`target.vars = "..."`) in the model for which to obtain predicted contrasts.
+
+The output of `predicted_contrasts()` is a data frame, where the last column `mean_Possessor_NP_Type_contrast` reports the obtained difference in predicted probabilities (i.e. the predicted contrasts).
 
 ```{r}
-np_type_contrasts <- marginal_contrasts(marginal_preds, "Possessor_NP_Type")
+# Use ranger model
+np_type_contrasts <- predicted_contrasts(tree_preds_ranger, "Possessor_NP_Type")
 head(np_type_contrasts)
 ```
+
 Plot the distribution of the combination-specific contrasts in predicted outcome.
 
 ```{r}
+# calculate the median contrast
+median_cont <- median(np_type_contrasts$mean_Possessor_NP_Type_contrast)
 ggplot(np_type_contrasts, aes(x = mean_Possessor_NP_Type_contrast)) +
   geom_vline(xintercept = 0, color = "grey") +
   geom_histogram(color = "black", fill = "gray", bins = 50) +
-  geom_vline(xintercept = median(np_type_contrasts$mean_Possessor_NP_Type_contrast), color = "red", size = 1) +
-  annotate(geom = "text", x = median(np_type_contrasts$mean_Possessor_NP_Type_contrast) + .05, y = 80, 
+  geom_vline(xintercept = median_cont, color = "red", size = 1) +
+  annotate(geom = "text", x = median_cont + .05, y = 80, 
            color = "red", hjust = 0,
-           label = paste("median =", round(median(np_type_contrasts$mean_Possessor_NP_Type_contrast), 3))) +
-  theme_classic()
+           label = paste("median =", round(median_cont, 3))) +
+  labs(x = "Difference in predicted s-genitive probability\n(proper - common)",
+       y = "") +
+  theme_classic() + ggtitle("NP type contrasts in {ranger} model")
 ```
+
 Try with `party` model.
 
 ```{r}
-np_type_contrasts_party <- marginal_contrasts(marginal_preds_party, "Possessor_NP_Type")
+np_type_contrasts_party <- predicted_contrasts(tree_preds_party, "Possessor_NP_Type")
+median_cont <- median(np_type_contrasts_party$mean_Possessor_NP_Type_contrast)
 ggplot(np_type_contrasts_party, aes(x = mean_Possessor_NP_Type_contrast)) +
   geom_vline(xintercept = 0, color = "grey") +
   geom_histogram(color = "black", fill = "gray", bins = 50) +
-  geom_vline(xintercept = median(np_type_contrasts_party$mean_Possessor_NP_Type_contrast), color = "red", size = 1) +
-  annotate(geom = "text", x = median(np_type_contrasts_party$mean_Possessor_NP_Type_contrast) + .03, y = 70, 
+  geom_vline(xintercept = median_cont, color = "red", size = 1) +
+  annotate(geom = "text", x = median_cont + .05, y = 80, 
            color = "red", hjust = 0,
-           label = paste("median =", round(median(np_type_contrasts_party$mean_Possessor_NP_Type_contrast), 3))) +
+           label = paste("median =", round(median_cont, 3))) +
+    labs(x = "Difference in predicted s-genitive probability\n(proper - common)",
+       y = "") +
   theme_classic() + ggtitle("NP type contrasts in {party} model")
 ```
 
 
+### Predicted contrasts for categorical variable with +3 levels
 
-
-```{r}
-animacy_contrasts <- marginal_preds |>
-  marginal_contrasts("Possessor_Animacy3")
-```
+The calculation of predictive contrasts for categorical predictors with more than two levels works similarly. The output of `predicted_contrasts()` is again a data frame, but now there is a set of final columns, one for each contrast. The targeted variable `Possessor_Animacy3`, for instance, has 3 levels, so there are three possible contrasts. Accordingly, the data frame includes three contrast columns: `contrast_animate_collective`, `contrast_animate_inanimate`, and `contrast_collective_inanimate`. The naming is such that the predicted probability for the second level is subtracted from the first. So for `contrast_animate_collective`, the prediction for `collective` is subtracted from that for `animate`. A predicted contrast of +.20 therefore signals that the predicted probability (of *s*-genitives) is higher for `animate` compared to `collective` referents.
 
 ```{r}
+animacy_contrasts <- predicted_contrasts(tree_preds_ranger, "Possessor_Animacy3")
 animacy_contrasts |> 
   summarise(across(6:8, ~ median(.x)))
 ```
 
-
+We can visualize the results easily.
 
 ```{r fig.width=6}
 library(ggridges)
@@ -527,28 +559,29 @@ animacy_contrasts |>
   pivot_longer(6:8, names_to = "contrast") |> 
   ggplot(aes(value, contrast)) +
   geom_density_ridges() +
-  # stat_summary(geom = "pointrange", fun.data = "median_hilow") +
   theme_classic()
 ```
 
-```{r}
-genre_contrasts <- marginal_preds |>
-  marginal_contrasts("Genre")
-```
+Basically, for a binary outcome and a predictor of $n$ levels, there are $k$ possible contrasts, where $k$ is calculated as
+
+$$ k = \frac{n!}{2(n - 2)!}$$
+
+So for genre, which has 5 levels, there are 10 possible contrasts.
 
 ```{r}
+genre_contrasts <- predicted_contrasts(tree_preds_ranger, "Genre")
 glimpse(genre_contrasts)
 ```
 
-We can plot these and color by the comparisons with Press (note the marginal averages above showed a distinct difference between Press and the rest).
+We can plot these and color by the comparisons with Press (previous work has shown a distinct difference between Press and the rest).
 
 ```{r fig.width=6}
 genre_contrasts |> 
   pivot_longer(6:15, names_to = "contrast") |> 
   mutate(
-    color = if_else(grepl("Press", contrast), "press", "nonpress")
+    IsPress = if_else(grepl("Press", contrast), "press", "nonpress")
   ) |> 
-  ggplot(aes(value, contrast, fill = color)) +
+  ggplot(aes(value, contrast, fill = IsPress)) +
   geom_density_ridges() +
   # stat_summary(geom = "pointrange", fun.data = "median_hilow") +
   theme_classic()
@@ -556,8 +589,142 @@ genre_contrasts |>
 
 All the comparisons with Press show long left tails. Because these reflect the difference in predicted probability of GENRE - Press, the left tails tell us that there are many combinations in which the *s*-genitive is predicted to be **less** likely in the stated genre than in Press texts.  
 
+We can compare this to the average predictions calculated with `avg_predictions()`, where it's clear that the "Press" genre stands out from the rest.
 
-## References
+```{r}
+avg_predictions(
+  tree_preds_ranger, 
+  target.vars = "Genre",
+  verbose = FALSE
+  )
+```
+
+# Predicting continuous outcomes (regression)
+
+The package can be used for cases with continuous outcomes. 
+
+To illustrate, we use the `english` dataset of response times for a lexical decision task, included in the `{languageR}` package (Baayen & Shafaei-Bajestan 2019). This gives mean visual lexical decision latencies and word naming latencies for 2284 monomorphemic English nouns and verbs, averaged for old and young participants, with various other predictor variables associated with response times. You can find more information about this dataset by consulting the documentation with `?languageR::english`. 
+
+```{r}
+english_rt <- languageR::english
+glimpse(english_rt)
+```
+
+So here we are interested, e.g., in the association of things like word FAMILIARITY and subject AGE with response times for identifying words. 
+
+```{r}
+english_rt |> 
+  ggplot(aes(Familiarity, RTlexdec)) +
+  geom_text(aes(label = Word, color = AgeSubject), size = 3) +
+  theme_classic() +
+  ggtitle("Responses are quicker for more familiar words and\nyounger participants")
+```
+
+The outcome in our model will the the mean response time latency `RTlexdec` for the words in the dataset.
+
+
+## Fit RF models
+
+As above, we'll illustrate with both `{ranger}` and `{party}` methods.
+
+A `ranger` forest.
+
+```{r}
+rf_english_ranger <- ranger(
+  RTlexdec ~ Familiarity + AgeSubject + WordCategory + WrittenFrequency +
+    FamilySize + LengthInLetters,
+  english_rt,
+  mtry = 3,
+  num.trees = 500,
+  respect.unordered.factors = "partition"
+)
+```
+
+A `party` forest.
+
+```{r}
+rf_english_party <- cforest(
+  RTlexdec ~ Familiarity + AgeSubject + WordCategory + WrittenFrequency +
+    FamilySize + LengthInLetters,
+  data = english_rt,
+  control = cforest_control(mtry = 3, ntree = 500L)
+)
+```
+
+## Get predicted response times
+
+Now get the tree predictions for the models. 
+
+```{r}
+eng_preds_ranger <- tree_predictions(rf_english_ranger, english_rt, verbose = F)
+eng_preds_party <- tree_predictions(rf_english_party, english_rt, verbose = F)
+```
+
+Again, the predicted outcome is the response latency for the experimental task, `RTlexdec_pred`.
+
+```{r}
+head(eng_preds_party$predictions)
+```
+
+
+### Average predictions for a categorical predictor
+
+Calculate the average predicted response latency by age of subject.
+
+```{r}
+avg_predictions(eng_preds_ranger, "AgeSubject", wt = "iso")
+```
+
+Calculate the average predicted response latency by age of subject and word familiarity.
+
+```{r}
+fam_age_preds <- avg_predictions(eng_preds_ranger, c("AgeSubject", "Familiarity"), 
+                                 verbose = F) 
+```
+
+
+We can plot the averages overlaying the predicted trend lines on top of the individual observations (the points).
+
+```{r fig.width=7}
+fam_age_preds |> 
+  ggplot(aes(Familiarity, mean_RTlexdec_pred, color = AgeSubject)) +
+  geom_point(data = english_rt, aes(y = RTlexdec), alpha = .2) +
+  geom_line(aes(group = AgeSubject), size = 6, color = "white") +
+  geom_line() +
+  geom_point(aes(shape = AgeSubject), size = 3) +
+  theme_classic() +
+  ggtitle("Predicted respone time latencies by Age and Word Familiarity",
+          subtitle = "Dots represent individual word means")
+```
+
+## Predicted contrasts
+
+```{r}
+age_contrasts <- predicted_contrasts(eng_preds_ranger, "AgeSubject")
+head(age_contrasts)
+```
+
+Again, we can plot the distribution of contrasts
+
+```{r}
+median_cont <- median(age_contrasts$mean_AgeSubject_contrast)
+age_contrasts |> 
+  ggplot(aes(mean_AgeSubject_contrast)) +
+  geom_vline(xintercept = 0, color = "grey", size = 2) +
+  geom_histogram(color = "black", fill = "gray", bins = 50) +
+  geom_vline(xintercept = median_cont, color = "red", size = 1) +
+  annotate(geom = "text", x = median_cont + .03, y = 1250, 
+           color = "red", hjust = 0,
+           label = paste("median =", round(median_cont, 3))) +
+  labs(x = "Difference in predicted response latency (young - old)", y = "") +
+  theme_classic()
+```
+
+
+
+# References
+
+Baayen RH, Shafaei-Bajestan, E. 2019. *languageR: Analyzing Linguistic Data: A Practical Introduction to Statistics*. R package version 1.5.0, [https://CRAN.R-project.org/package=languageR](https://CRAN.R-project.org/package=languageR).
 
 Sönning, Lukas & Jason Grafmiller. 2022. Seeing the wood for the trees: Predictive margins for random forests. Preprint. *PsyArXiv*. [https://doi.org/10.31234/osf.io/jr8yk](https://doi.org/10.31234/osf.io/jr8yk).
 
