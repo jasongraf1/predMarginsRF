@@ -144,7 +144,7 @@ tree_predictions <- function(m, data, num.trees = 500L, n.breaks = 10L,
             outcome_dt <- cbind(new_data, preds_df) |>
               as.data.table() |>
               melt(id.vars = full_vars, measure.vars = names(preds_df),
-                   variable.name = "tree", value.name = paste0(label, "_prob"))
+                   variable.name = "tree", value.name = paste0(label, "_pred"))
 
             return(outcome_dt)
           })
@@ -158,7 +158,7 @@ tree_predictions <- function(m, data, num.trees = 500L, n.breaks = 10L,
         )} else { # if outcome is binary
 
         predicted.outcome <- m$forest$levels[m$forest$class.values[1]]
-        label <- paste0(predicted.outcome, "_prob")
+        label <- paste0(predicted.outcome, "_pred")
         preds_df <- preds$predictions[, m$forest$class.values[1], ] |>
           as.data.frame()
 
