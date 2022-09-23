@@ -23,6 +23,8 @@ avg_predictions(
 \item{wt}{Character string indicating the type of weighting to be applied to the calculation of mean predictions. See details below.}
 
 \item{interval}{Numeric values specifying the central proportion of predictions to report. Default is 90\%}
+
+\item{verbose}{Logical. Should extra information be printed?}
 }
 \value{
 A \code{data.frame} including all combinations of values in \code{target.vars}.
