@@ -5,6 +5,7 @@
 #' @param equal.wt Character string of external predictor variable names across which equal weighting will be applied.
 #' @param wt Character string indicating the type of weighting to be applied to the calculation of mean predictions. See details below.
 #' @param interval Numeric values specifying the central proportion of predictions to report. Default is 90%
+#' @param verbose Logical. Should extra information be printed?
 #'
 #' @author Jason Grafmiller
 #'
@@ -126,10 +127,10 @@ avg_predictions <- function(marginal_preds, target.vars, equal.wt = NULL,
   }
 
   # get the averages
-  mar_avg_df <- mar_table[, .(mean_prob = weighted.mean(get(pred_outcome), wt)),
-                       by = c(target.vars, "tree")][, .(mean = mean(mean_prob),
-                                                 lower = quantile(mean_prob, interval[1]),
-                                                 upper = quantile(mean_prob, interval[2])),
+  mar_avg_df <- mar_table[, .(mean_pred = weighted.mean(get(pred_outcome), wt)),
+                       by = c(target.vars, "tree")][, .(mean = mean(mean_pred),
+                                                 lower = quantile(mean_pred, interval[1]),
+                                                 upper = quantile(mean_pred, interval[2])),
                                              by = target.vars] |>
     as.data.frame() # convert back to data.frame
 
