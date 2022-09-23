@@ -56,7 +56,7 @@ predicted_contrasts <- function(marginal_preds, target.vars,
 
   } else {
     wide_dt$contrast <- wide_dt[, get(levs[2])] - wide_dt[, get(levs[1])]
-    message("Contrasts represent difference in predictions for ", target.vars": ", levs[2], " - ", levs[1])
+    message("Contrasts represent difference in predictions for ", target.vars, ": ", levs[2], " - ", levs[1])
     avg_contrast_df <- wide_dt[, .(mean = mean(contrast),
                                    lower = quantile(contrast, interval[1]),
                                    upper = quantile(contrast, interval[2])), by = peripheral_vars] |>
