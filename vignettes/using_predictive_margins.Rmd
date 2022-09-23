@@ -259,16 +259,16 @@ See `help("tree_predictions")` for more information.
 
 ### Average predictions for a categorical predictor
 
-First we'll calculate predictive margins for the targeted variable `Possessor_Animacy3`. All other predictors in the model (i.e. `Genre`, `Possessor_Animacy3`, `Possessor_NP_Type`, `Possessor_Length` `Possessor_Thematicity`, `Final_Sibilant`) are therefore peripheral variables, which means that we need to average over their levels/values. As discussed in Sönning & Grafmiller (2022), we can use different weighting schemes when averaging over peripheral predictors. There, a distinction is made between external and internal variables. For external variables, is seems sensible to form simple averages; for internal variables, we would usually prefer weighted averages, with weights reflecting the observed distribution of the predictor in the data.
+First we'll calculate predictive margins for the targeted variable `Possessor_Animacy3`. All other predictors in the model (i.e. `Genre`, `Possessor_Animacy3`, `Possessor_NP_Type`, `Possessor_Length` `Possessor_Thematicity`, `Final_Sibilant`) are therefore peripheral variables, which means that we need to average over their levels/values. Sönning & Grafmiller (2022) discuss different weighting schemes that can be used when averaging over peripheral predictors. By default, weighted averages are used for all peripheral variables.
 
 The function `avg_predictions()` takes two arguments, the model and a character vector of the names of the targeted variable(s) (`target.vars = "..."`) in the model for which to obtain predictive margins. Additional optional arguments include:
 
 - `equal.wt`: Character string of (external) predictor variable names across which equal weighting (i.e. simple averages) will be applied.
-- `wt`: Character string indicating the type of weighting to be applied to those peripheral predictors **not** specified in `ext.vars`. 
-- `interval`: The lower and upper quantiles for the percentile interval summarizing the distribution of predicted probabilities across the trees in the forest. Default is `c(.05, .95)`, for a 90% percentile interval.
+- `wt`: Character string indicating the type of weighting---'isolated' (`"iso"`), or 'joint' (`"joint"`)---to be applied to those peripheral predictors **not** specified in `equal.wt`. See Sönning & Grafmiller (2022) for discussion of the weighting schemes. 
+- `interval`: The lower and upper quantiles for the percentile interval summarizing the distribution of predicted probabilities across the trees in the forest. Default is `c(.05, .95)`, for a 90% interval.
 - `verbose`: If `TRUE` additional information will be printed about the dataset.
 
-The default weighting is the isolated weighting (`"iso"`), where the weights are based on the expected distribution of all combinations of the peripheral variables (i.e. those **not** `Possessor_Animacy3` and **not** specified in the `ext.vars` argument), calculated from the independent marginal (overall) distribution of each peripheral predictor in the dataset.
+The default weighting is the isolated weighting (`"iso"`), where the weights are based on the expected distribution of all combinations of the peripheral variables (i.e. those **not** `Possessor_Animacy3` and **not** specified in the `equal.wt` argument), calculated from the independent marginal (overall) distributions of each peripheral predictor in the dataset.
 
 ```{r anim-avg-ranger1}
 # messages can be turned off with `verbose = FALSE`
@@ -354,7 +354,7 @@ avg_predictions(tree_preds_party, "Possessor_Length", wt = "iso", verbose = F) |
   theme_classic() + ggtitle("Possessor Length in {party} model")
 ```
 
-If we want more values for this predictor, we'll need to recalculate the tree predictions, setting the `break` argument to a different set of numbers.
+If we want more values for this predictor, we'll need to recalculate the tree predictions, setting the `breaks` argument to a different set of numbers.
  
 ```{r tree-preds-party2}
 tree_preds_party2 <- tree_predictions(
@@ -481,7 +481,7 @@ avg_predictions(
   theme_classic()
 ```
 
-Plotting interactions fo continuous predictors is not as simple, but can be done. Here the effects of `Possessor_Length` and `Possessor_Thematicity` are largely independent of one another. 
+Plotting interactions of 2 or more continuous predictors is not as simple, but can be done. Plotting the interaction of `Possessor_Length` and `Possessor_Thematicity`, for instance, suggests that their effects are largely independent of one another. 
 
 ```{r fig.width=7}
 avg_predictions(
@@ -496,18 +496,21 @@ avg_predictions(
   theme_classic()
 ```
 
+\_
 
-## Predicted contrasts
+## Predictive contrasts
 
-We refer to "predicted contrasts" as the difference between two predicted outcomes for specific values (levels) of a predictor. For the targeted variable `Possessor_NP_Type`, which has two levels (common vs. proper nouns), the predicted contrast is the difference between the predicted probabilities for the two levels. For instance, if the predicted probabilities are .55 for common nouns and .70 for proper nouns, the predicted contrast is +.15. These contrasts are estimated for every combination of predictor values, averaged over all the trees in the forest. 
+We refer to "Predictive contrasts" as the difference between two predicted outcomes for specific values (levels) of a predictor. Summarizing over these contrasts is one way we can get a measure of the effect size and direction of a given target predictor, similar in spirit to a regression coefficient (at least for categorical predictors).
+
+For example, for the targeted variable `Possessor_NP_Type`, which has two levels (common vs. proper nouns), the Predictive contrast is the difference between the predicted probabilities for the two levels. For instance, if the predicted probabilities are .55 for common nouns and .70 for proper nouns, the predicted contrast is +.15. These contrasts are estimated for every combination of predictor values, averaged over all the trees in the forest. 
 
 ### Predictive contrasts for binary variables
 
 For binary targeted variables, which level is subtracted from which depends on the coding of the factor. By default, R orders factor levels alphabetically. For `Possessor_NP_Type`, `common` is therefore represented (internally) as `1`, and `proper` as `2`. For binary predictors, the first level (`common`) is subtracted from the second (`proper`).
 
-The function `predicted_contrasts()` takes two arguments, the model and a character vector of the names of the targeted variable(s) (`target.vars = "..."`) in the model for which to obtain predicted contrasts.
+The function `predicted_contrasts()` takes three arguments, the output of `tree_predictions()`, a character vector of the names of the targeted variable in the model for which to obtain predicted contrasts (`target.vars = "..."`), and an `interval` argument (default is 90%).
 
-The output of `predicted_contrasts()` is a data frame, where the last column `proper_common_contrast` reports the obtained difference in predicted probabilities (i.e. the predicted contrasts) for `Possessor_NP_Type == 'proper'` -- `Possessor_NP_Type == 'common'`.
+The output of `predicted_contrasts()` is a data frame, with one column, here `proper_common_contrast`, reporting the obtained difference in predicted probabilities (i.e. the predicted contrasts) for the target predictor, and `lower` and `upper` columns reflecting the bounds of the percentile interval. In this case, contrasts represent the difference: `Possessor_NP_Type == 'proper'` -- `Possessor_NP_Type == 'common'`. The naming is such that the predicted outcome for the second level is subtracted from the first.
 
 ```{r}
 # Use ranger model
@@ -562,12 +565,26 @@ avg_contrasts(tree_preds_ranger, "Possessor_NP_Type", by = c("Genre", "Possessor
               wt = "joint", verbose = F)
 ```
 
+These can be plotted easily.
+
+```{r fig.width=7}
+avg_contrasts(tree_preds_ranger, "Possessor_NP_Type", by = c("Genre", "Possessor_Animacy3" ), 
+              wt = "joint", verbose = F) |> 
+  ggplot(aes(Possessor_Animacy3, mean_proper_common_contrast)) +
+  geom_pointrange(aes(ymin = lower, ymax = upper)) +
+  coord_flip() +
+  facet_wrap(~Genre) +
+  labs(x = "Difference in predicted s-genitive probability\n(proper - common)", 
+       y = "") +
+  ggtitle("Possessor NP type across animacy levels and genres")
+  theme_classic()
+```
 
 
 
-### Predicted contrasts for categorical variable with +3 levels
+### Predictive contrasts for categorical variable with +3 levels
 
-The calculation of predictive contrasts for categorical predictors with more than two levels works similarly. The output of `predicted_contrasts()` is again a data frame, but now there is a set of final columns, one for each contrast. The targeted variable `Possessor_Animacy3`, for instance, has 3 levels, so there are three possible contrasts. Accordingly, the data frame includes three contrast columns: `contrast_animate_collective`, `contrast_animate_inanimate`, and `contrast_collective_inanimate`. The naming is such that the predicted probability for the second level is subtracted from the first. So for `contrast_animate_collective`, the prediction for `collective` is subtracted from that for `animate`. A predicted contrast of +.20 therefore signals that the predicted probability (of *s*-genitives) is higher for `animate` compared to `collective` referents.
+The calculation of predictive contrasts for categorical predictors with more than two levels works similarly. The output of `predicted_contrasts()` is again a data frame, but now there is a set of columns, one for each contrast. The targeted variable `Possessor_Animacy3`, for instance, has 3 levels, so there are three possible contrasts. Accordingly, the data frame includes three contrast columns: `contrast_animate_collective`, `contrast_animate_inanimate`, and `contrast_collective_inanimate`. Again, the naming is such that the predicted outcome for the second level is subtracted from the first. So for `contrast_animate_collective`, the prediction for `collective` is subtracted from that for `animate`. A predicted contrast of +.20 therefore signals that the predicted probability (of *s*-genitives) is higher for `animate` compared to `collective` referents.
 
 ```{r}
 animacy_contrasts <- predicted_contrasts(tree_preds_ranger, "Possessor_Animacy3")
@@ -584,7 +601,8 @@ animacy_contrasts |>
   pivot_longer(6:8, names_to = "contrast") |> 
   ggplot(aes(value, contrast)) +
   geom_density_ridges() +
-  theme_classic()
+  theme_classic() +
+  labs(y = "", x = "Difference in predicted s-genitive probability")
 ```
 
 Basically, for a binary outcome and a predictor of $n$ levels, there are $k$ possible contrasts, where $k$ is calculated as
@@ -600,7 +618,7 @@ glimpse(genre_contrasts)
 
 We can plot these and color by the comparisons with Press (previous work has shown a distinct difference between Press and other genres/registers, so this is a potentially interesting comparison).
 
-```{r fig.width=6}
+```{r fig.width=7}
 genre_contrasts |> 
   pivot_longer(6:15, names_to = "contrast") |> 
   mutate(
@@ -609,10 +627,11 @@ genre_contrasts |>
   ggplot(aes(value, contrast, fill = Is.Press)) +
   geom_density_ridges() +
   # stat_summary(geom = "pointrange", fun.data = "median_hilow") +
-  theme_classic()
+  theme_classic() +
+  labs(y = "", x = "Difference in predicted s-genitive probability")
 ```
 
-All the comparisons with Press show long left tails. Because these reflect the difference in predicted probability of GENRE - Press, the left tails tell us that there are many combinations in which the *s*-genitive is predicted to be **less** likely in the stated genre than in Press texts.  
+All the comparisons with Press show long left tails. Because these reflect the difference in predicted probability of GENRE - Press, the left tails tell us that there are many combinations in which the *s*-genitive is predicted to be **less** likely in the stated genre than in Press texts.   
 
 We can compare this to the average predictions calculated with `avg_predictions()`, where it's clear that the "Press" genre stands out from the rest.
 
@@ -632,10 +651,10 @@ To illustrate, we use the `english` dataset of response times for a lexical deci
 
 ```{r}
 english_rt <- languageR::english
-glimpse(english_rt)
+head(english_rt)
 ```
 
-So here we are interested, e.g., in the association of things like word FAMILIARITY and subject AGE with response times for identifying words. 
+So here we are interested, e.g., in the association of things like word FAMILIARITY and subject AGE with response times for identifying words in a timed decision task. 
 
 ```{r}
 english_rt |> 
@@ -645,8 +664,7 @@ english_rt |>
   ggtitle("Responses are quicker for more familiar words and\nyounger participants")
 ```
 
-The outcome in our model will the the mean response time latency `RTlexdec` for the words in the dataset.
-
+The outcome in our model will be the mean response time latency `RTlexdec` for the words in the dataset.
 
 ## Fit RF models
 
@@ -722,7 +740,8 @@ fam_age_preds |>
           subtitle = "Dots represent individual word means")
 ```
 
-## Predicted contrasts
+
+## Predictive contrasts
 
 Calculate the predicted contrasts for `AgeSubject`.
 
