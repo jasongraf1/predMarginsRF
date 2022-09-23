@@ -42,10 +42,13 @@ avg_contrasts <- function(marginal_preds, target.vars, by = NULL, equal.wt = NUL
   # Get peripheral predictor variables
   peripheral_vars <- full_vars[!(full_vars %in% target.vars)]
 
+  # Get levels of the target variable
+  levs <- sort(as.character(unique(mar_table[, get(target.vars)])))
+
   # exclude any external variables
   if(!is.null(equal.wt)) peripheral_vars <- peripheral_vars[!(peripheral_vars %in% equal.wt)]
 
-  contrast_df <- predicted_contrasts(marginal_preds, target.vars, interval, verbose)
+  contrast_df <- predicted_contrasts(marginal_preds, target.vars, interval, verbose = verbose)
 
   if(is.null(by)){
     message("No secondary variable(s) provided. Set `by = ` to calculate weighted averages by secondary variables.")
@@ -55,12 +58,10 @@ avg_contrasts <- function(marginal_preds, target.vars, by = NULL, equal.wt = NUL
     contrast_dt <- as.data.table(contrast_df)
 
     if(verbose){
-      message("Calculating weighted averages treating ", paste(peripheral_vars, collapse = ", "), " as peripheral variables, and ", paste(equal.wt, collapse = ", "), " as unweighted external variables.\n")
-
       if(wt == "iso") {
-        message("Weightings of feature combinations are based on their expected distribution derived from their independent marginal distributions in the dataset.")
+        message("\nWeightings of feature combinations are based on their expected distribution derived from their independent marginal distributions in the dataset.")
       } else if(wt == "joint"){
-        message("Weightings of feature combinations are based on their joint distribution observed in the dataset.")
+        message("\nWeightings of feature combinations are based on their joint distribution observed in the dataset.")
       }
     }
 
@@ -139,7 +140,7 @@ avg_contrasts <- function(marginal_preds, target.vars, by = NULL, equal.wt = NUL
                                           upper = quantile(get(contrast_col), interval[2])), by = by] |>
       as.data.frame() # convert back to data.frame
 
-    names(contrast_avg_df)[names(contrast_avg_df) == "mean"] <- paste("mean", levs[2], levs[1], "contrast", sep = "_")
+    names(contrast_avg_df)[names(contrast_avg_df) == "mean_pred"] <- paste("mean", levs[2], levs[1], "contrast", sep = "_")
 
     num_tar_vars <- target.vars[target.vars %in% target.vars[sapply(data[, target.vars], is.numeric)]]
 
