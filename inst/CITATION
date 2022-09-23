@@ -1,6 +1,6 @@
 citHeader("To cite predictiveMargins in publications use:")
 
-citEntry(entry = Manual",
+citEntry(entry = "Manual",
   title        = "{predictiveMargins}: Predictive margins for random forests",
   author       = personList(as.person("Jason Grafmiller"),
                    as.person("Lukas Sönning")),
