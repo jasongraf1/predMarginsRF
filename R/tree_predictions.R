@@ -36,8 +36,8 @@ tree_predictions <- function(m, data, num.trees = 500L, n.breaks = 10L,
                                  verbose = TRUE, breaks = NULL){
   require(data.table) # use data.table because the results can be very large
 
-  if(class(m) == "ranger" & m$treetype == "Classification"){
-    stop("Forests with `ranger` must be probability forests. Refit model with `probability = TRUE`.")
+  if(class(m) == "ranger"){
+    if(m$treetype == "Classification") stop("Forests with `ranger` must be probability forests. Refit model with `probability = TRUE`.")
   }
 
   if(class(m) == "ranger"){
