@@ -50,6 +50,56 @@ Add details here
 }
 \examples{
 \dontrun{
+# not run
+library(ranger)
+library(dplyr)
+
+## predict binary outcome
+
+df <- written_genitives |>
+dplyr::mutate(
+  Type = as.factor(Type),
+  Genre = as.factor(Genre),
+  Possessor_Animacy3 = as.factor(Possessor_Animacy3),
+  Possessor_NP_Type = as.factor(Possessor_NP_Type)
+)
+
+rf1 <- ranger(
+  Type ~ Genre + Possessor_Animacy3 + Possessor_NP_Type + Possessor_Length,
+  data = df,
+  mtry = 3,
+  num.trees = 500L,
+  probability = TRUE
+)
+
+tree_preds1 <- tree_predictions(rf1, df)
+
+avg_predictions(tree_preds1, "Possessor_Animacy3")
+
+avg_contrasts(tree_preds1, "Possessor_Animacy3", by = "Genre")
+
+
+## predict continuous outcome
+
+df2 <- mtcars |>
+  mutate(
+  cyl = as.factor(cyl),
+  gear = as.factor(gear)
+  )
+
+rf2 <- ranger(
+  mpg ~ .,
+  data = mtcars,
+  mtry = 3,
+  num.trees = 500L,
+  probability = TRUE
+)
+
+tree_preds2 <- tree_predictions(rf2, mtcars)
+
+avg_predictions(tree_preds1, "wt")
+
+avg_contrasts(tree_preds1, "cyl")
 
 }
 }
