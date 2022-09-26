@@ -31,19 +31,19 @@ The basic procedure goes as follows:
 1. Fit a random forest (RF) model. *Note: Currently the package only works with the `{ranger}` and `{party}` packages*
 2. Create a new dataframe containing all possible combinations of predictor values in the random forest model. E.g. for three predictors *A*, *B*, and *C*, with $n_A$, $n_B$, $n_C$ levels, we get $n_A \times n_B \times n_C$ combinations.
 3. For each combination, calculate the predicted outcome for each tree in the random forest.
-4. Summarize the effects of one or more target predictor by averaging over all other predictors, where the averages are weighted by the distributions of the specific predictor combinations in the original dataset.
+4. Summarize the effects of one or more target predictors by averaging over all other predictors, where the averages are weighted by the distributions of the specific predictor combinations in the original dataset.
 
-Steps 2 and 3 are executed in `tree_predictions()`. The other three functions provide different methods for summarizing patterns of specific target predictors.
+Steps 2 and 3 are executed in `tree_predictions()`. The other three functions provide different methods for summarizing patterns of specific target predictors (Step 4).
 
 For more details of the method and theoretical motivation see Sönning & Grafmiller (2022), [Seeing the wood for the trees: Predictive margins for random forests](https://doi.org/10.31234/osf.io/jr8yk).
 
 ## Libraries
 
-For this vignette we'll load the following basic libraries. 
+For this vignette we'll use the following basic libraries. 
 
 ```{r setup}
 library(tidyverse) # for data wrangling and plotting
-library(data.table) # for much faster data wrangling and computation
+library(data.table) # used by {predictiveMargins} for much faster data wrangling and computation
 ```
 
 Install the `{predictiveMargins}` package.
@@ -58,7 +58,8 @@ Load the library as usual.
 library(predictiveMargins)
 ```
 
-We start with classification cases first, then look at an example with a continuous outcome.
+We start with random forests for classification cases first, then look at an example with a continuous outcome.  
+  
 
 # Predicting discrete outcomes (classification)
 
@@ -105,7 +106,7 @@ fmla <- Type ~ Genre + Possessor_Animacy3 + Possessor_NP_Type +
 glimpse(written_genitives[, all.vars(fmla)])
 ```
 
-Fit the model with `ranger()`. For the `{predictiveMargins}` package we must use a probability forest rather than a classification forest by setting `probability = TRUE`. See `?ranger` for more details. In a real case we would also tune the model's hyperparameters, e.g. with the `{tidymodels}` or `{tuneRanger}` packages. But this will only affect the performance of the model, and does not affect the functions in `{predictiveMargins}`, so we won't bother with it here. 
+Fit the model with `ranger()`. For the `{predictiveMargins}` package **we must use a probability forest rather than a classification forest** by setting `probability = TRUE`. See `?ranger` for more details. In a real case we would also tune the model's hyperparameters, e.g. with the `{tidymodels}` or `{tuneRanger}` packages. But this will only affect the performance of the model, and does not affect the functions in `{predictiveMargins}`, so we won't bother with it here. 
 
 ```{r ranger-rf}
 library(ranger)
@@ -239,7 +240,7 @@ tree_preds_ranger <- tree_predictions(
   )
 ```
 
-The resulting object `tree_preds_ranger` is a list. The dataframe with the predicted probabilities is contained in `tree_preds_ranger$predictions`.
+The resulting object `tree_preds_ranger` is a list of class `"treePredictions"`. A dataframe with the predicted probabilities is contained in `tree_preds_ranger$predictions`.
 
 ```{r}
 head(tree_preds_ranger$predictions)
@@ -261,13 +262,40 @@ head(tree_preds_party$predictions)
 See `?tree_predictions` for more information.
 
 
-### Average predictions for a categorical predictor
+### Getting average predictions for a target predictor
 
-First we'll calculate average predictions for the target variable `Possessor_Animacy3`. All other predictors in the model (i.e. `Genre`, `Possessor_Animacy3`, `Possessor_NP_Type`, `Possessor_Length` `Possessor_Thematicity`, `Final_Sibilant`) are therefore peripheral variables, which means that we need to average over their levels/values. Sönning & Grafmiller (2022) discuss different weighting schemes that can be used when averaging over peripheral predictors. By default, weighted averages are used for all peripheral variables.
+Now we can summarize the predictions. First we'll calculate average predictions for the target variable `Possessor_Animacy3`. All other predictors in the model (i.e. `Genre`, `Possessor_Animacy3`, `Possessor_NP_Type`, `Possessor_Length` `Possessor_Thematicity`, `Final_Sibilant`) are therefore 'peripheral' variables, which means that we will average over their levels/values. By default, weighted averages are used for all peripheral variables. The effect of using weighted averages is to give more importance to more likely/frequent combinations of predictor values, and less importance to rare and/or very unlikely ones. 
+
+In a nutshell, we propose two possible weighting schemes based on the distributions of predictor variables in the data. We can consider these distributions independently, or in combination with each other. To illustrate, consider the contingency table showing the distribution of `Possessor_NP_Type` and `Possessor_Animacy3` values in the dataset. 
+
+```{r}
+xtabs(~ Possessor_NP_Type + Possessor_Animacy3, written_genitives) |> 
+  addmargins()
+```
+
+From these numbers we can derive two weighting schemes based. Counting down the row sums, the marginal probabilities for values of `Possessor_NP_Type` are:
+
+- *P*(common): 3307/5098 = `r round(3307/5098, 3)`
+- *P*(proper): 1791/5098 = `r round(1791/5098, 3)`
+
+Likewise, counting across the column sums, the marginal probabilities for values of `Possessor_Animacy3` are:
+
+- *P*(animate): 2043/5098 = `r round(2043/5098, 3)`
+- *P*(collective): 690/5098 = `r round(690/5098, 3)`
+- *P*(inanimate): 2365/5098 = `r round(2365/5098, 3)`
+
+Based on these we can calculate the **expected** joint probability of each combination of NP type and animacy by simply multiplying the (independent) marginal probabilities. So, e.g. the expected probability of an inanimate proper noun possessor would be .464 * .351 = `r round((1791/5098)*(2365/5098), 3)`. When averaging the forest predictions across combinations of these two predictors, `r round((1791/5098)*(2365/5098), 3)` would be our weighting for this combination of predictor values. We refer to this scheme as 'isolated' weighting (`"iso"`), since distributions are considered in isolation from one another.
+
+On the other hand, we could consider weighting by the **observed** proportionsof specific combinations in our data. In this case we simply divide the observed counts in each cell by the total number of observations. So the observed proportion of inanimate proper noun possessors is 890/5098 = `r round(368/5098, 3)`. This value is our weighting for this combination of predictor values in the alternative scheme. We refer to this scheme as 'joint' weighting (`"joint"`). 
+
+Note that these different weighting schemes have slightly different interpretations, and may yield very different results. Examination of our data suggests that the differences are minimal, however, more testing is needed to understand the full implications of using these weigthing schemes in various contexts. See Sönning & Grafmiller (2022: 8-13) for further discussion. 
+
+
+#### Average predictions for a categorical predictor
 
 The function `avg_predictions()` takes two arguments, the output of `tree_predictions()` and a character vector of the names of the target variable(s) (`target.vars = "..."`) in the model for which to obtain the average predictions. Additional optional arguments include:
 
-- `equal.wt`: Character string of (external) predictor variable names across which equal weighting (i.e. simple averages) will be applied.
+- `equal.wt`: Character string of predictor variable names across which equal weighting (i.e. simple averages) will be applied.
 - `wt`: Character string indicating the type of weighting---'isolated' (`"iso"`), or 'joint' (`"joint"`)---to be applied to those peripheral predictors **not** specified in `equal.wt`. See Sönning & Grafmiller (2022) for discussion of the weighting schemes. 
 - `interval`: The lower and upper bounds of the percentile interval summarizing the central distribution of predicted probabilities across the trees in the forest. Default is `c(.05, .95)`, for a 90% interval.
 - `verbose`: If `TRUE` additional information will be printed about the dataset.
@@ -283,7 +311,7 @@ animacy_avg_iso <- avg_predictions(
 animacy_avg_iso
 ```
 
-Now try the joint weighting. This weighting uses the observed numbers of each combination in the original training dataset.
+Now try the joint weighting. Again, this weighting uses the observed numbers of each combination in the original training dataset.
 
 ```{r anim-avg-ranger2}
 animacy_avg_joint <- avg_predictions(tree_preds_ranger, "Possessor_Animacy3", wt = "joint")
@@ -333,7 +361,7 @@ bind_rows(
   theme_classic()
 ```
 
-### Average predictions for a continuous predictor
+#### Average predictions for a continuous predictor
 
 Calculating predictions for continuous predictors is easy as well.
 
@@ -571,22 +599,6 @@ avg_contrasts(tree_preds_ranger, "Possessor_NP_Type", by = c("Genre", "Possessor
               wt = "joint", verbose = F)
 ```
 
-These can be plotted easily.
-
-```{r fig.width=7}
-avg_contrasts(tree_preds_ranger, "Possessor_NP_Type", by = c("Genre", "Possessor_Animacy3" ), 
-              wt = "joint", verbose = F) |> 
-  ggplot(aes(Possessor_Animacy3, mean_proper_common_contrast)) +
-  geom_pointrange(aes(ymin = lower, ymax = upper)) +
-  coord_flip() +
-  facet_wrap(~Genre) +
-  labs(x = "Difference in predicted s-genitive probability\n(proper - common)", 
-       y = "") +
-  ggtitle("Possessor NP type across animacy levels and genres") +
-  theme_classic()
-```
-
-
 
 ### Predictive contrasts for categorical variable with +3 levels
 
@@ -716,7 +728,7 @@ head(eng_preds_party$predictions)
 ```
 
 
-### Average predictions for a categorical predictor
+### Average predictions for target predictors
 
 Calculate the average predicted response latency by age of subject.
 
