@@ -273,7 +273,7 @@ xtabs(~ Possessor_NP_Type + Possessor_Animacy3, written_genitives) |>
   addmargins()
 ```
 
-From these numbers we can derive two weighting schemes based. Counting down the row sums, the marginal probabilities for values of `Possessor_NP_Type` are:
+Counting down the row sums, the marginal probabilities for values of `Possessor_NP_Type` are:
 
 - *P*(common): 3307/5098 = `r round(3307/5098, 3)`
 - *P*(proper): 1791/5098 = `r round(1791/5098, 3)`
