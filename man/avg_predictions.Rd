@@ -41,7 +41,16 @@ Calculate average predictions for target variables in random forest
 Add details here
 }
 \examples{
-\dontrun{}
+\dontrun{
+# not run
+library(ranger)
+
+rf <- ranger(Species ~ ., iris, probability = T)
+
+tree_preds <- tree_predictions(rf, iris)
+
+avg_predictions(tree_preds, "Sepal.Length")
+}
 }
 \references{
 Add references here
