@@ -22,7 +22,16 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{}
+#' \dontrun{
+#' # not run
+#' library(ranger)
+#'
+#' rf <- ranger(Species ~ ., iris, probability = T)
+#'
+#' tree_preds <- tree_predictions(rf, iris)
+#'
+#' avg_predictions(tree_preds, "Sepal.Length")
+#' }
 #' @importFrom data.table ":="
 avg_predictions <- function(marginal_preds, target.vars, equal.wt = NULL,
                          wt = c("iso", "joint", "all"),
@@ -53,12 +62,16 @@ avg_predictions <- function(marginal_preds, target.vars, equal.wt = NULL,
   if(!is.null(equal.wt)) peripheral_vars <- peripheral_vars[!(peripheral_vars %in% equal.wt)]
 
   if(verbose){
-    message("Calculating weighted averages treating ", paste(peripheral_vars, collapse = ", "), " as peripheral variables, and ", paste(equal.wt, collapse = ", "), " as unweighted external variables.\n")
+    if(is.null(equal.wt)){
+      message("Calculating weighted averages treating ", paste(peripheral_vars, collapse = ", "), " as peripheral variables")
+    } else {
+      message("Calculating weighted averages treating ", paste(peripheral_vars, collapse = ", "), " as peripheral variables, and ", paste(equal.wt, collapse = ", "), " as unweighted variables.\n")
+    }
 
     if(wt == "iso") {
-      message("Weightings of feature combinations are based on their expected distribution derived from their independent marginal distributions in the dataset.")
+      message("Weightings of feature combinations are based on their expected frequency derived from their independent marginal distributions in the dataset.")
     } else if(wt == "joint"){
-      message("Weightings of feature combinations are based on their joint distribution observed in the dataset.")
+      message("Weightings of feature combinations are based on their observed frequency in the dataset.")
     }
   }
 
