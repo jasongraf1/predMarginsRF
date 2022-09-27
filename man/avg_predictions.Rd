@@ -38,7 +38,7 @@ A \code{data.frame} including all combinations of values in \code{target.vars}.
 Calculate average predictions for target variables in random forest
 }
 \details{
-Add details here
+Calculates the weighted average predictions for a target predictor in random forest model.
 }
 \examples{
 \dontrun{
@@ -53,7 +53,7 @@ avg_predictions(tree_preds, "Sepal.Length")
 }
 }
 \references{
-Add references here
+Sönning, Lukas & Jason Grafmiller. 2022. Seeing the wood for the trees: Predictive margins for random forests. Preprint. \emph{PsyArXiv}. \url{https://doi.org/10.31234/osf.io/jr8yk}.
 }
 \author{
 Jason Grafmiller

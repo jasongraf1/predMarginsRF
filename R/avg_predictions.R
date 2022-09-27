@@ -9,7 +9,7 @@
 #'
 #' @author Jason Grafmiller
 #'
-#' @details Add details here
+#' @details Calculates the weighted average predictions for a target predictor in random forest model.
 #'
 #' @return A \code{data.frame} including all combinations of values in \code{target.vars}.
 #' \describe{
@@ -18,7 +18,10 @@
 #' \item{\code{upper}}{The upper percentile of model predictions set by \code{interval}.}
 #' }
 #'
-#' @references Add references here
+#' @references
+#'
+#' Sönning, Lukas & Jason Grafmiller. 2022. Seeing the wood for the trees: Predictive margins for random forests. Preprint. \emph{PsyArXiv}. \url{https://doi.org/10.31234/osf.io/jr8yk}.
+#'
 #' @export
 #'
 #' @examples

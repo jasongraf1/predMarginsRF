@@ -104,7 +104,7 @@ avg_contrasts(tree_preds1, "cyl")
 }
 }
 \references{
-Add references here
+Sönning, Lukas & Jason Grafmiller. 2022. Seeing the wood for the trees: Predictive margins for random forests. Preprint. \emph{PsyArXiv}. \url{https://doi.org/10.31234/osf.io/jr8yk}.
 }
 \author{
 Jason Grafmiller

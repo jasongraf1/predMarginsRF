@@ -12,6 +12,9 @@
 #'
 #' @details This is a wrapper function which takes the output of \code{predicted_contrasts} and calculated weighted average contrasts for secondary predictor levels.
 #'
+#' @references
+#'
+#' Sönning, Lukas & Jason Grafmiller. 2022. Seeing the wood for the trees: Predictive margins for random forests. Preprint. \emph{PsyArXiv}. \url{https://doi.org/10.31234/osf.io/jr8yk}.
 #' @return a \code{data.frame}
 #' @export
 #'

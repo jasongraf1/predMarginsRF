@@ -22,8 +22,7 @@ predicted_contrasts(
 }
 \value{
 A \code{data.frame}.
-\describe{
-}
+\describe{}
 }
 \description{
 Calculate contrasts between random forest predictions for target predictor values
@@ -35,7 +34,7 @@ Add details here
 \dontrun{}
 }
 \references{
-Add references here
+Sönning, Lukas & Jason Grafmiller. 2022. Seeing the wood for the trees: Predictive margins for random forests. Preprint. \emph{PsyArXiv}. \url{https://doi.org/10.31234/osf.io/jr8yk}.
 }
 \author{
 Jason Grafmiller
