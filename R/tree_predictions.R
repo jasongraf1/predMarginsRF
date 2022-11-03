@@ -213,14 +213,10 @@ tree_predictions <- function(m, data, num.trees = 500L, n.breaks = 10L,
             merge(..., by = NULL, all = TRUE, sort = FALSE)
           },
           outcome_list
-        )} else { # if outcome is binary
-
+        )} else {
+        # if outcome is BINARY
         predicted.outcome <- m$forest$levels[m$forest$class.values[1]]
         label <- paste0(predicted.outcome, "_pred")
-        preds_df <- preds$predictions[, m$forest$class.values[1], ] |>
-          as.data.frame()
-
-        names(preds_df) <- paste("tree", 1:dim(preds$predictions)[3], sep = ".")
 
         # Reshape the dataframe to long format
         # Using data.table is MUCH faster than base R. These are likely to be very
