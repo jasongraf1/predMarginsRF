@@ -29,6 +29,8 @@ tree_predictions(
 \item{vars}{Character string of targeted predictor variable names from which to derive marginal predictions. Default is all predictors in \code{m} (not recommended).}
 
 \item{ext_vars}{Character string indicating the external variables to take into consideration when weighting}
+
+\item{variable.vals}{Named list containing the values for all variables used to create the reference grid.}
 }
 \value{
 A \code{list} of class \code{treePredictions}.
