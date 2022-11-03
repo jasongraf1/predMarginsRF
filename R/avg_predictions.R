@@ -78,7 +78,11 @@ avg_predictions <- function(marginal_preds, target.vars, equal.wt = NULL,
     }
   }
 
-  num_vars <- peripheral_vars[sapply(data[, peripheral_vars], is.numeric)]
+  if(length(peripheral_vars) == 1){
+    num_vars <- peripheral_vars[is.numeric(data[, peripheral_vars])]
+  } else {
+    num_vars <- peripheral_vars[sapply(data[, peripheral_vars], is.numeric)]
+  }
 
   if(length(num_vars) > 0) {
     # Convert numeric columns to factors for merging
