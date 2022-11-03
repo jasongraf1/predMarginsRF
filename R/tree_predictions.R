@@ -6,6 +6,7 @@
 #' @param ext_vars Character string indicating the external variables to take into consideration when weighting
 #' @param num.trees Number of trees from which to extract predictions. Default is 500.
 #' @param n.breaks Number of breaks with which to split continuous predictors. Default is 10.
+#' @param variable.vals Named list containing the values for all variables used to create the reference grid.
 #' @param verbose Logical. Should information be printed?
 #' @param breaks A named list with values representing custom points for which to get predictions for continuous predictors. If a number of length = 1 is used, that will be the number of evenly-spaced points used (similar to \code{n.breaks})
 #'
@@ -119,6 +120,8 @@ tree_predictions <- function(m, data, num.trees = 500L, n.breaks = 10L,
     }
     return(vals)
   })
+
+  names(var_list) <- full_vars
 
   # create the expanded grid
   new_data <- do.call(expand.grid, var_list)
@@ -239,6 +242,7 @@ tree_predictions <- function(m, data, num.trees = 500L, n.breaks = 10L,
     variable_names = full_vars,
     predicted.outcome = predicted.outcome,
     n.breaks = n.breaks,
+    variable.vals = var_list,
     num.trees = num.trees
   )
 
