@@ -45,7 +45,7 @@ avg_predictions <- function(marginal_preds, target.vars, equal.wt = NULL,
   if(class(marginal_preds) != "treePredictions") stop(paste(marginal_preds, 'is not of class "treePredictions"'))
 
   wt <- match.arg(wt)
-  n.breaks <- marginal_preds$n.breaks
+  pred_vals <- marginal_preds$variable.vals
   mar_table <- marginal_preds$predictions
   data <- marginal_preds$data
   pred_outcome <- paste0(marginal_preds$predicted.outcome, "_pred")
@@ -144,9 +144,9 @@ avg_predictions <- function(marginal_preds, target.vars, equal.wt = NULL,
 
   # get the averages
   mar_avg_df <- mar_table[, .(mean_pred = weighted.mean(get(pred_outcome), wt)),
-                       by = c(target.vars, "tree")][, .(mean = mean(mean_pred),
-                                                 lower = quantile(mean_pred, interval[1]),
-                                                 upper = quantile(mean_pred, interval[2])),
+                       by = c(target.vars, "tree")][, .(mean = mean(mean_pred, na.rm = TRUE),
+                                                 lower = quantile(mean_pred, interval[1], , na.rm = TRUE),
+                                                 upper = quantile(mean_pred, interval[2], , na.rm = TRUE)),
                                              by = target.vars] |>
     as.data.frame() # convert back to data.frame
 
