@@ -45,6 +45,7 @@ avg_predictions <- function(marginal_preds, target.vars, equal.wt = NULL,
   if(class(marginal_preds) != "treePredictions") stop(paste(marginal_preds, 'is not of class "treePredictions"'))
 
   wt <- match.arg(wt)
+  n.breaks <- marginal_preds$n.breaks
   pred_vals <- marginal_preds$variable.vals
   mar_table <- marginal_preds$predictions
   data <- marginal_preds$data
@@ -86,10 +87,20 @@ avg_predictions <- function(marginal_preds, target.vars, equal.wt = NULL,
 
   if(length(num_vars) > 0) {
     # Convert numeric columns to factors for merging
+    # data_dt[ , (num_vars) := lapply(.SD, as.factor), .SDcols = num_vars]
+    binned_d <- copy(data_dt)
+
+    for(i in seq_along(num_vars)){
+      v <- num_vars[i]
+      vals <- sort(unique(mar_table[, get(v)]))
+      cuts <- vals
+      cuts[1] <- min(data_dt[, get(v)]) # set min cut at data minimum
+      cuts <- c(cuts, max(data_dt[, get(v)])) # set max cut at data maximum
+      binned_d[ , (v) := lapply(.SD, function(x) cut(x, cuts, include.lowest=T)), .SDcols = v]
+      # now set the levels to the values in the marginal predictions table
+      setattr(binned_d[[v]],"levels", as.character(vals))
+    }
     mar_table[ , (num_vars) := lapply(.SD, as.factor), .SDcols = num_vars]
-    data_dt[ , (num_vars) := lapply(.SD, as.factor), .SDcols = num_vars]
-    binned_d <- data_dt
-    binned_d[ , (num_vars) := lapply(.SD, function(x) cut2(x, n.breaks)), .SDcols = num_vars]
   } else {
     binned_d <- data_dt
   }
@@ -104,12 +115,13 @@ avg_predictions <- function(marginal_preds, target.vars, equal.wt = NULL,
     names(count_dt)[1:length(peripheral_vars)] <- peripheral_vars
 
     # merge data_dt with the the weighting data.table
-
     mar_table <- merge(mar_table, count_dt, by = peripheral_vars, all.x = TRUE)
 
   } else if (wt == "iso"){
     # stop("I'm not sure what to do here...")
     # wt_list <- lapply(peripheral_vars, function(x){
+
+
     for(i in seq_along(peripheral_vars)){
       p <- peripheral_vars[i]
       df <- as.data.frame(table(binned_d[, get(p)]))
@@ -149,14 +161,20 @@ avg_predictions <- function(marginal_preds, target.vars, equal.wt = NULL,
   # get the averages
   mar_avg_df <- mar_table[, .(mean_pred = weighted.mean(get(pred_outcome), wt)),
                        by = c(target.vars, "tree")][, .(mean = mean(mean_pred, na.rm = TRUE),
-                                                 lower = quantile(mean_pred, interval[1], , na.rm = TRUE),
-                                                 upper = quantile(mean_pred, interval[2], , na.rm = TRUE)),
+                                                 lower = quantile(mean_pred, interval[1], na.rm = TRUE),
+                                                 upper = quantile(mean_pred, interval[2], na.rm = TRUE)),
                                              by = target.vars] |>
     as.data.frame() # convert back to data.frame
 
   names(mar_avg_df)[names(mar_avg_df) == "mean"] <- paste("mean", pred_outcome, sep = "_")
 
   num_tar_vars <- target.vars[target.vars %in% target.vars[sapply(data[, target.vars], is.numeric)]]
+
+  if(length(num_tar_vars) == 1){
+    num_tar_vars <- target.vars[is.numeric(data[, target.vars])]
+  } else {
+    num_tar_vars <- target.vars[target.vars %in% target.vars[sapply(data[, target.vars], is.numeric)]]
+  }
 
   if(length(num_tar_vars) > 0) mar_avg_df[num_tar_vars] <- lapply(mar_avg_df[num_tar_vars], function(x) as.numeric(as.character(x))) # convert back to numeric
 
