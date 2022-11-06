@@ -168,8 +168,6 @@ avg_predictions <- function(marginal_preds, target.vars, equal.wt = NULL,
 
   names(mar_avg_df)[names(mar_avg_df) == "mean"] <- paste("mean", pred_outcome, sep = "_")
 
-  num_tar_vars <- target.vars[target.vars %in% target.vars[sapply(data[, target.vars], is.numeric)]]
-
   if(length(num_tar_vars) == 1){
     num_tar_vars <- target.vars[is.numeric(data[, target.vars])]
   } else {
