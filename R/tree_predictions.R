@@ -160,7 +160,13 @@ tree_predictions <- function(m, data, num.trees = 500L, n.breaks = 10L,
       marginal_dt
     } else {
       # outcome is CATEGORICAL
-      preds_df <- preds$predictions[, m$forest$class.values[1], ] |>
+
+      # get the correct dimension of the predictions
+      if(m$forest$class.values[1] == 0){
+        col <- 1
+      } else col <- 2
+
+      preds_df <- preds$predictions[, col, ] |>
         as.data.frame()
 
       names(preds_df) <- paste("tree", 1:dim(preds$predictions)[3], sep = ".")
