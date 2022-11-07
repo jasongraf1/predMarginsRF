@@ -224,7 +224,7 @@ tree_predictions <- function(m, data, num.trees = 500L, n.breaks = 10L,
           outcome_list
         )} else {
         # if outcome is BINARY
-        predicted.outcome <- m$forest$levels[m$forest$class.values[1]]
+        predicted.outcome <- m$forest$levels[m$forest$class.values[col]]
         label <- paste0(predicted.outcome, "_pred")
 
         # Reshape the dataframe to long format
