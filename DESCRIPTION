@@ -1,6 +1,6 @@
 Package: predictiveMargins
 Title: Predictive margins for random forests
-Version: 0.10.1
+Version: 0.10.2
 Authors@R: c(
     person(
     "Jason", "Grafmiller", 
