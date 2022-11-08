@@ -240,6 +240,11 @@ tree_predictions <- function(m, data, num.trees = 500L, n.breaks = 10L,
         if(length(predicted.outcome) == 2) predicted.outcome <- predicted.outcome[2]
       }
 
+  # Convert numeric variables back to numeric
+  num_vars <- full_vars[sapply(data[, full_vars], is.numeric)]
+
+  if(length(num_vars) > 0) marginal_dt[, (num_vars) := lapply(.SD, function(x) as.numeric(as.character(x))), .SDcols = num_vars]
+
   # Create list of relevant information and data
   marginal_preds <- list(
     predictions = marginal_dt,
