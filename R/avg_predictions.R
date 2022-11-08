@@ -47,16 +47,15 @@ avg_predictions <- function(marginal_preds, target.vars, equal.wt = NULL,
   if(class(marginal_preds) != "treePredictions") stop(paste(marginal_preds, 'is not of class "treePredictions"'))
 
   wt <- match.arg(wt)
+
+  # Get info from marginal predictions object
   n.breaks <- marginal_preds$n.breaks
   pred_vals <- marginal_preds$variable.vals
-  mar_table <- marginal_preds$predictions
+  mar_table <- copy(marginal_preds$predictions)
   data <- marginal_preds$data
   pred_outcome <- paste0(marginal_preds$predicted.outcome, "_pred")
-
   # Convert data and tables to data.table objects for faster processing
-  if(!is.data.table(mar_table)) mar_table <- as.data.table(mar_table)
-  if(!is.data.table(data)) data_dt <- as.data.table(data)
-
+  data_dt <- copy(as.data.table(data))
   # Get vector of all predictor names
   full_vars <- marginal_preds$variable_names
 
@@ -143,11 +142,29 @@ avg_predictions <- function(marginal_preds, target.vars, equal.wt = NULL,
       prod
       )
 
-    # )
-    # for(p in seq_along(wt_list)){
-    #   mar_table <- merge(mar_table, wt_list[[1]], by = )
-    # }
   } else if (wt == "all"){
+    # recount the numeric variables to include the targets
+    num_vars <- full_vars[sapply(data[, full_vars], is.numeric)]
+    if(length(num_vars) > 0) {
+      # Convert numeric columns to factors for merging
+      # data_dt[ , (num_vars) := lapply(.SD, as.factor), .SDcols = num_vars]
+      binned_d <- copy(data_dt)
+
+      for(i in seq_along(num_vars)){
+        v <- num_vars[i]
+        vals <- sort(unique(mar_table[, get(v)]))
+        cuts <- vals
+        cuts[1] <- min(data_dt[, get(v)]) # set min cut at data minimum
+        cuts <- unique(c(cuts, max(data_dt[, get(v)]))) # set max cut at data maximum
+        binned_d[ , (v) := lapply(.SD, function(x) cut(x, cuts, include.lowest=T)), .SDcols = v]
+        # now set the levels to the values in the marginal predictions table
+        setattr(binned_d[[v]],"levels", as.character(vals))
+      }
+      mar_table[ , (num_vars) := lapply(.SD, as.factor), .SDcols = num_vars]
+    } else {
+      binned_d <- data_dt
+    }
+
     count_dt <- ftable(binned_d[, ..full_vars]) |>
       as.data.frame() |>
       as.data.table()
