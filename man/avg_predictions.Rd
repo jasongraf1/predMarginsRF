@@ -8,7 +8,7 @@ avg_predictions(
   marginal_preds,
   target.vars,
   equal.wt = NULL,
-  wt = c("iso", "joint", "all"),
+  wt = c("iso", "joint", "all", "none"),
   interval = c(0.05, 0.95),
   verbose = TRUE
 )
@@ -20,7 +20,7 @@ avg_predictions(
 
 \item{equal.wt}{Character string of external predictor variable names across which equal weighting will be applied.}
 
-\item{wt}{Character string indicating the type of weighting to be applied to the calculation of mean predictions. See details below.}
+\item{wt}{Character string indicating the type of weighting to be applied to the calculation of mean predictions. See details below. Possible values are \code{'iso'} (default), \code{'joint'}, \code{'all'}, \code{'none'}.}
 
 \item{interval}{Numeric values specifying the central proportion of predictions to report. Default is 90\%}
 
@@ -39,6 +39,8 @@ Calculate average predictions for target variables in random forest
 }
 \details{
 Calculates the weighted average predictions for a target predictor in random forest model.
+
+For calculating averages there are four possible weighting schemes (\code{wt}). The default isolated weighting \code{'iso'} uses the independent marginal distributions of the peripheral variables. Essentially this is the expected proportions we'd calculate in a contingency table. For \code{'joint'}, we use the observed distribution of the combinations of peripheral variable values---in effect the observed proportions in a contingency table. For \code{'all'}, we use the observed distributions, but we include the target variables in these counts as well. Finally, \code{'none'} calculates simple unweighted means.
 }
 \examples{
 \dontrun{
