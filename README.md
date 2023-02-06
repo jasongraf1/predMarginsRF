@@ -12,3 +12,4 @@ remotes::install_github("jasongraf1/predictiveMargins")
 
 Information on how to use the package can be found in the vignette: `doc/using_predictive_margins.html` 
 
+For a conceptual introduction to the method, see Sönning, L. and J. Grafmiller. 2022. "Seeing the wood for the trees: Predictive margins for random forests". <https://psyarxiv.com/jr8yk/>.
