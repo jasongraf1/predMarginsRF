@@ -96,7 +96,9 @@ avg_predictions <- function(marginal_preds, target.vars, equal.wt = NULL,
       vals <- sort(unique(mar_table[, get(v)]))
       cuts <- vals
       cuts[1] <- min(data_dt[, get(v)]) # set min cut at data minimum
-      cuts <- c(cuts, max(data_dt[, get(v)])) # set max cut at data maximum
+      if(max(data_dt[, get(v)]) > max(cuts)){
+        cuts <- c(cuts, max(data_dt[, get(v)])) # set max cut at data maximum
+      }
       binned_d[ , (v) := lapply(.SD, function(x) cut(x, cuts, include.lowest=T)), .SDcols = v]
       # now set the levels to the values in the marginal predictions table
       setattr(binned_d[[v]],"levels", as.character(vals))
