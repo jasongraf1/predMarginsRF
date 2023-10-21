@@ -162,9 +162,7 @@ tree_predictions <- function(m, data, num.trees = 500L, n.breaks = 10L,
       # outcome is CATEGORICAL
 
       # get the correct dimension of the predictions
-      if(m$forest$class.values[1] == 0){
-        col <- 1
-      } else col <- 2
+      col <- max(m$forest$class.values)
 
       preds_df <- preds$predictions[, col, ] |>
         as.data.frame()
