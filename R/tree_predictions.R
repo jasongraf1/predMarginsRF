@@ -89,6 +89,11 @@ tree_predictions <- function(m, data, num.trees = 500L, n.breaks = 10L,
                                  verbose = TRUE, breaks = NULL){
   require(data.table) # use data.table because the results can be very large
 
+  # for tidymodels objects we extract the ranger engine fit object
+  if(class(m)[1] %in% c("_ranger", "workflow")){
+    m <- parsnip::extract_fit_engine(m)
+  }
+
   if(class(m) == "ranger"){
     if(m$treetype == "Classification") stop("Forests with `ranger` must be probability forests. Refit model with `probability = TRUE`.")
   }
