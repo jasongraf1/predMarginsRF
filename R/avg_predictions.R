@@ -22,7 +22,7 @@
 #'
 #' @references
 #'
-#' Sönning, Lukas & Jason Grafmiller. 2022. Seeing the wood for the trees: Predictive margins for random forests. Preprint. \emph{PsyArXiv}. \url{https://doi.org/10.31234/osf.io/jr8yk}.
+#' Sönning, Lukas & Jason Grafmiller. 2024. Seeing the wood for the trees: Predictive margins for random forests. \emph{Corpus Linguistics and Linguistic Theory} 20(1). 153-181. \url{10.1515/cllt-2022-0083}.
 #'
 #' @export
 #'
